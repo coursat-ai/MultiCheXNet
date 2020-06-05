@@ -3,6 +3,10 @@ import os
 import pandas as pd
 import cv2
 import matplotlib.pyplot as plt
+import keras
+from keras.preprocessing.image import ImageDataGenerator
+from keras.applications.vgg16 import preprocess_input
+from glob import glob
 
 path = '/kaggle/input/data/'
 
@@ -14,14 +18,20 @@ imgs_folders = ['images_001', 'images_002', 'images_003',
        'images_008', 'images_009', 'images_010', 'images_011',
        'images_012']
 
-Categories = ['Atelectasis', 'Cardiomegaly', 'Consolidation',
+Categories = [ 'No Finding','Atelectasis', 'Cardiomegaly', 'Consolidation',
         'Edema', 'Effusion', 'Fibrosis', 'Infiltration', 'Mass',
         'Pneumothorax', 'Emphysema', 'Pneumonia', 'Pleural_Thickening',
-        'Nodule', 'Hernia', 'No Finding']
+        'Nodule', 'Hernia']
 
 data_df = pd.read_csv(path + data_csv)
 box_df  = pd.read_csv(path + bbox_csv)
 
+
+
+my_glob = glob('/kaggle/input/data/images*/images/*.png')
+
+full_img_paths = {os.path.basename(x): x for x in my_glob}
+dataset_path = data_df['Image Index'].map(full_img_paths.get)
 
 
 def Adjust_data(data, box):
@@ -30,6 +40,7 @@ def Adjust_data(data, box):
     new_data = pd.merge(left=data, right=box, left_on ='Image Index', right_on ='Image Index', how = 'left')
     new_data = new_data.rename(columns={'Finding Labels': 'All Labels', 'Finding Label' : "Det Label"})
     new_data = new_data.fillna({'Det Label': 'No Finding', 'Bbox':0})
+    new_data['full_path'] = dataset_path
     
     return new_data ,box  
 
