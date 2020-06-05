@@ -20,6 +20,7 @@ You Can use this repo to train your independent model, whether it is classificat
 https://www.kaggle.com/nih-chest-xrays/data
 
 For clearance: csv of whole dataset = Data_Entry_2017.csv , csv of detection = BBox_List_2017.csv
+
 Data manipualtion consists of 3 functions:
 - Adjust_data: Merging of csv from detection and csv of the whole dataset and filling the null values so it takes 2 arguments
 - Adjust_box : Correction of label missmatch, then sorting the images according to their image index, then we group the duplicates into 1 row (Because detection can have more than 1 value ie. more than 1 disease detected), and grouping is done with some arrangement of columns and concatenation them into string format
