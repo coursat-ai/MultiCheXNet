@@ -96,6 +96,6 @@ class Data_gen(keras.utils.Sequence):
         return X, Y 
 
 
-train_gen = Data_gen(df, preprocess_input, batch_size=10, shuffle=True)
+#train_gen = Data_gen(df, preprocess_input, batch_size=10, shuffle=True)
 
-x, y = next(iter(train_gen))
+#x, y = next(iter(train_gen))
