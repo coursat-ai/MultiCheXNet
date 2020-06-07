@@ -53,7 +53,7 @@ class Data_gen(keras.utils.Sequence):
         # Generate data
         for i, ID in enumerate(index):
             # Read the image
-            img = cv2.imread(df['full_path'][ID])
+            img = cv2.imread(self.df['full_path'][ID])
             
             # extract the number of label
             c = self.df['Class_Det'][ID]
