@@ -7,7 +7,7 @@ import pydicom
 import cv2
 import keras
 from keras.applications.vgg16 import preprocess_input
-
+from MultiCheXNet.data_loader.SIIM_ACR import Seg_manipulation.rle2mask
 
 class Seg_gen(keras.utils.Sequence):
     'Generates data from a Dataframe'
