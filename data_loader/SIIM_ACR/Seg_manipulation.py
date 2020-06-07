@@ -8,13 +8,13 @@ import cv2
 import keras
 from keras.applications.vgg16 import preprocess_input
 
-
+'''
 train_path = '/kaggle/input/siim-dicom-images/siim-original/dicom-images-train'
 rle_path = '/kaggle/input/siim-dicom-images/train-rle.csv'
 
 train_filenames = os.listdir(train_path)
 rle_csv = pd.read_csv(rle_path)
-
+'''
 
 def process_labels(df): #Converts labels to binary
     
