@@ -94,7 +94,7 @@ def dfcat2dfid(df, Categories): # change dataframe of category names into catego
     return df
 
 
-df, Xbox = Adjust_data(data_df, box_df)
+#df, Xbox = Adjust_data(data_df, box_df)
 
-df = dfcat2dfid(df, Categories)
+#df = dfcat2dfid(df, Categories)
 
