@@ -83,5 +83,5 @@ def rle2mask(rle, width, height):
     return mask.reshape(width, height)
 
 
-rle_csv = process_labels(rle_csv)
-rle_csv = add_full_path(rle_csv, train_path)
+#rle_csv = process_labels(rle_csv)
+#rle_csv = add_full_path(rle_csv, train_path)
