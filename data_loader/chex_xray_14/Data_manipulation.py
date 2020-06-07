@@ -28,10 +28,11 @@ data_df = pd.read_csv(path + data_csv)
 box_df  = pd.read_csv(path + bbox_csv)
 '''
 
-def add_path(df, path = '/kaggle/input/data/images*/images/*.png'):
+def Add_path(df, path = '/kaggle/input/data/images*/images/*.png'):
     my_glob = glob(path)
     full_img_paths = {os.path.basename(x): x for x in my_glob}
     dataset_path = df['Image Index'].map(full_img_paths.get)
+    df['full_path'] = dataset_path
     return df
 
 
@@ -41,8 +42,7 @@ def Adjust_data(data, box):
     new_data = pd.merge(left=data, right=box, left_on ='Image Index', right_on ='Image Index', how = 'left')
     new_data = new_data.rename(columns={'Finding Labels': 'All Labels', 'Finding Label' : "Det Label"})
     new_data = new_data.fillna({'Det Label': 'No Finding', 'Bbox':0})
-    new_data['full_path'] = dataset_path
-    
+        
     return new_data ,box  
 
 def Adjust_box(box_df):
