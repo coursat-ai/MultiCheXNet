@@ -8,6 +8,7 @@ from keras.preprocessing.image import ImageDataGenerator
 from keras.applications.vgg16 import preprocess_input
 from glob import glob
 
+'''
 path = '/kaggle/input/data/'
 
 bbox_csv = 'BBox_List_2017.csv'
@@ -25,13 +26,13 @@ Categories = [ 'No Finding','Atelectasis', 'Cardiomegaly', 'Consolidation',
 
 data_df = pd.read_csv(path + data_csv)
 box_df  = pd.read_csv(path + bbox_csv)
+'''
 
-
-
-my_glob = glob('/kaggle/input/data/images*/images/*.png')
-
-full_img_paths = {os.path.basename(x): x for x in my_glob}
-dataset_path = data_df['Image Index'].map(full_img_paths.get)
+def add_path(df, path = '/kaggle/input/data/images*/images/*.png'):
+    my_glob = glob(path)
+    full_img_paths = {os.path.basename(x): x for x in my_glob}
+    dataset_path = df['Image Index'].map(full_img_paths.get)
+    return df
 
 
 def Adjust_data(data, box):
