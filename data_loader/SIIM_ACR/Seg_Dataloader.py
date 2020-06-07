@@ -64,6 +64,3 @@ class Seg_gen(keras.utils.Sequence):
             Y[i,] = np.asarray(mask)
         
         return X, Y 
-
-
-x,y = next(iter(Seg_gen(rle_csv, preprocess_input, batch_size = 32, dim=(256,256))))
