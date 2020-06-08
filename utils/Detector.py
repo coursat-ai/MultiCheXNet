@@ -1,4 +1,4 @@
-from ModelBlock import ModelBlock
+from .ModelBlock import ModelBlock
 
 class Detector(ModelBlock):
     def __init__(self):

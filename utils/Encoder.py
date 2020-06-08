@@ -1,6 +1,6 @@
 import tensorflow as tf
 
-from ModelBlock import ModelBlock
+from .ModelBlock import ModelBlock
 
 
 
