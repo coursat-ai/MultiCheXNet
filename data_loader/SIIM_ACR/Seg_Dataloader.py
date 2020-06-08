@@ -1,12 +1,9 @@
 import os
 import numpy as np
-import matplotlib.pyplot as plt
 import pandas as pd
 from glob import glob
 import pydicom
 import cv2
-import tensorflow.keras as keras
-from tensorflow.keras.applications.vgg16 import preprocess_input
 import tensorflow
 from skimage.transform import resize
 
