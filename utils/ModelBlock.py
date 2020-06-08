@@ -1,4 +1,4 @@
-from tensorflow.keras.models import Sequential
+from tensorflow.keras.models import Model
 
 class ModelBlock():
     def __init__():
@@ -20,7 +20,7 @@ class ModelBlock():
         pass
 
     @staticmethod
-    def add_head(encoder, model_heads):
+    def add_heads(encoder, model_heads):
         """
         This function adds a list of heads to the encoder block, a head can be
         classifcation, detection or segmentation head
@@ -35,9 +35,12 @@ class ModelBlock():
             combined model keras model.
         """
 
-        model = Sequential()
-        model.add(encoder.model)
-        for model_head in model_heads:
-            model.add(model_head.model)
+
+        model = Model(
+            inputs=encoder.model.inputs,
+            outputs=[model_head.model for model_head in model_heads] ,
+            name="MultiCheXNet")
+
+
 
         return model
