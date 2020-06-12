@@ -11,6 +11,7 @@ class Encoder(ModelBlock):
         self.model_type = model_type
         self.weights=weights
         self.model = self.make_model()
+        self.num_layers = len(self.model.layers)
 
     def make_model(self):
         """

@@ -63,7 +63,6 @@ def processGroundTruth(bb, labels, priors, network_output_shape):
 
     return y_true
 
-
 def conv_batch_lrelu(input_tensor, numfilter, dim, strides=1):
     input_tensor = Conv2D(numfilter, (dim, dim), strides=strides, padding='same',
                         kernel_regularizer=regularizers.l2(0.0005),
@@ -88,10 +87,13 @@ class Detector(ModelBlock):
         self.image_size = image_size
         self.n_cells = self.image_size // 32
         self.B = self.TINY_YOLOV2_ANCHOR_PRIORS.shape[0]
-
         self.n_classes = n_classes
 
         self.model = self.make_model()
+
+        self.num_layers = ModelBlock.get_head_num_layers(encoder, self.model)
+
+
 
     def make_model(self):
         """

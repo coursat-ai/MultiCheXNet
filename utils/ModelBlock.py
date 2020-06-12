@@ -20,7 +20,7 @@ class ModelBlock():
         pass
 
     @staticmethod
-    def add_heads(encoder, model_heads):
+    def add_heads(encoder, model_heads,is_classes=True):
         """
         This function adds a list of heads to the encoder block, a head can be
         classifcation, detection or segmentation head
@@ -38,9 +38,11 @@ class ModelBlock():
 
         model = Model(
             inputs=encoder.model.inputs,
-            outputs=[model_head.model for model_head in model_heads] ,
+            outputs=[model_head.model if is_classes else model_head  for model_head in model_heads] ,
             name="MultiCheXNet")
-
-
-
         return model
+
+    @staticmethod
+    def get_head_num_layers(encoder, model_head):
+        return len(ModelBlock.add_heads(encoder, [model_head] , is_classes=False).layers) - len(encoder.model.layers)
+

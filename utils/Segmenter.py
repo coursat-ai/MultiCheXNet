@@ -7,6 +7,7 @@ class Segmenter(ModelBlock):
     def __init__(self, encoder):
         self.encoder_output = encoder.model.output
         self.model = self.make_model()
+        self.num_layers = ModelBlock.get_head_num_layers(encoder, self.model)
 
     def make_model(self):
         """
