@@ -5,7 +5,7 @@ from tensorflow.keras.layers import Dense
 
 class Segmenter(ModelBlock):
     def __init__(self, encoder):
-        self.input_layer = encoder.model.output
+        self.encoder_output = encoder.model.output
         self.model = self.make_model()
 
     def make_model(self):
@@ -15,7 +15,7 @@ class Segmenter(ModelBlock):
             keras model:
         """
 
-        X = Flatten()(self.input_layer)
-        X = Dense(3, activation='softmax')(X)
+        X = Flatten( name="seg_flatten")(self.encoder_output)
+        X = Dense(3, activation='softmax' , name="seg_dense")(X)
 
         return X

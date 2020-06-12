@@ -8,7 +8,7 @@ from tensorflow.keras.layers import Dense
 
 class Classifier(ModelBlock):
     def __init__(self, encoder):
-        self.input_layer = encoder.model.output
+        self.encoder_output = encoder.model.output
         self.model = self.make_model()
 
     def make_model(self):
@@ -18,7 +18,7 @@ class Classifier(ModelBlock):
             keras model:
         """
 
-        X = Flatten()(self.input_layer)
+        X = Flatten()(self.encoder_output)
         X = Dense(3, activation='softmax')(X)
 
         return X
