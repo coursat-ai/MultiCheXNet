@@ -113,7 +113,7 @@ class Detector(ModelBlock):
 
         return model_out
 
-
+    @tf.function
     def loss(self, y_true, y_pred):
         n_cells = y_pred.get_shape().as_list()[1]
         y_true = tf.reshape(y_true, tf.shape(y_pred), name='y_true')
