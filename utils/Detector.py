@@ -113,12 +113,14 @@ class Detector(ModelBlock):
 
         return model_out
 
-    @tf.function
+    
     def loss(self, y_true, y_pred):
         n_cells = y_pred.get_shape().as_list()[1]
         y_true = tf.reshape(y_true, tf.shape(y_pred), name='y_true')
         y_pred = tf.identity(y_pred, name='y_pred')
-
+        
+        TINY_YOLOV2_ANCHOR_PRIORS = tf.convert_to_tensor(self.TINY_YOLOV2_ANCHOR_PRIORS, dtype= tf.float32)
+        
         #### PROCESS PREDICTIONS ####
         # get x-y coords (for now they are with respect to cell)
         predicted_xy = tf.nn.sigmoid(y_pred[..., :2])
@@ -131,7 +133,7 @@ class Detector(ModelBlock):
         ), axis=-1)
 
         # compute bb width and height
-        predicted_wh = self.TINY_YOLOV2_ANCHOR_PRIORS * tf.exp(y_pred[..., 2:4])
+        predicted_wh = TINY_YOLOV2_ANCHOR_PRIORS * tf.exp(y_pred[..., 2:4])
 
         # compute predicted bb center and width
         predicted_min = predicted_xy - predicted_wh / 2
