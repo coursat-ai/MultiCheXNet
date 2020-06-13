@@ -125,7 +125,7 @@ class det_gen(tensorflow.keras.utils.Sequence):
         return a
 
 
-def get_train_validation_generator(self,csv_path,img_path ,batch_size=8, dim=(256,256), n_channels=3,
+def get_train_validation_generator(csv_path,img_path ,batch_size=8, dim=(256,256), n_channels=3,
                  n_classes=1, shuffle=True,transform=None ,preprocess = None , only_positive=True, validation_split=0.2 ):
 
 
