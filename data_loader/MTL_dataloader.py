@@ -8,12 +8,13 @@ from .RSNA_dataloader import get_train_validation_generator as detection_get_tra
 class MTL_generatot(tensorflow.keras.utils.Sequence):
     'Generates data from a Dataframe'
 
-    def __init__(self, Segmentation_gen, detection_gen , nb_iteration):
+    def __init__(self, Segmentation_gen, detection_gen , nb_iteration,batch_size):
         'Initialization'
 
         self.seg_generator = Segmentation_gen
         self.det_generator = detection_gen
         self.nb_iteration = nb_iteration
+        self.batch_size = batch_size
         self.batch_number = 0
 
     def __len__(self):
@@ -66,8 +67,8 @@ def get_train_validation_generator(det_csv_path,seg_csv_path , det_img_path, seg
                                                                                 only_positive=only_positive,
                                                                                 validation_split=validation_split)
 
-    MTL_train_gen = MTL_generatot(seg_train_gen, det_train_gen , seg_train_gen.nb_iteration+det_train_gen.nb_iteration)
-    MTL_valid_gen = MTL_generatot(seg_valid_gen, det_valid_gen, seg_valid_gen.nb_iteration + det_valid_gen.nb_iteration)
+    MTL_train_gen = MTL_generatot(seg_train_gen, det_train_gen , seg_train_gen.nb_iteration+det_train_gen.nb_iteration ,batch_size=batch_size )
+    MTL_valid_gen = MTL_generatot(seg_valid_gen, det_valid_gen, seg_valid_gen.nb_iteration + det_valid_gen.nb_iteration , batch_size=batch_size)
 
     return MTL_train_gen, MTL_valid_gen
 
