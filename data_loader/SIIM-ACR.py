@@ -109,6 +109,9 @@ class Seg_gen(tensorflow.keras.utils.Sequence):
                 img = cv2.cvtColor(np.array(img, dtype=np.uint8), cv2.COLOR_GRAY2RGB)
             
             img = np.asarray(cv2.resize(img, self.dim))
+
+            if self.preprocess_fct !=None:
+                img= self.preprocess_fct(img)
             
             mask = resize(mask,
                           self.dim,
