@@ -8,6 +8,7 @@ import tensorflow as tf
 import numpy as np
 import tensorflow
 import random
+import pandas as pd
 
 def bbToYoloFormat(bb):
     """
@@ -55,11 +56,10 @@ def processGroundTruth(bb, labels, priors, network_output_shape):
 
 class det_gen(tensorflow.keras.utils.Sequence):
     'Generates data from a Dataframe'
-    def __init__(self,csv_path,patientId , img_path ,batch_size=8, dim=(256,256), n_channels=3,
-                 n_classes=1, shuffle=True,transform=None , only_positive=True, preprocess = None):
-        self.df = pd.read_csv(csv_path)
-        if only_positive:
-            self.df= self.df[self.df["Target"]==1]
+    def __init__(self,csv_file,patientId , img_path ,batch_size=8, dim=(256,256), n_channels=3,
+                 n_classes=1, shuffle=True,transform=None, preprocess = None):
+
+        self.df = csv_file
         self.shuffle = shuffle
         self.img_path = img_path
         self.patient_ids = patientId
@@ -123,3 +123,30 @@ class det_gen(tensorflow.keras.utils.Sequence):
         a = exposure.equalize_adapthist(a)
 
         return a
+
+
+def get_train_validation_generator(self,csv_path,img_path ,batch_size=8, dim=(256,256), n_channels=3,
+                 n_classes=1, shuffle=True,transform=None ,preprocess = None , only_positive=True, validation_split=0.2 ):
+
+
+  df = pd.read_csv(csv_path)
+  if only_positive:
+    df = df[self.df["Target"] == 1]
+
+  random.seed(42)
+  patient_ids = df["PatientId"].unique()
+  random.shuffle(patient_ids)
+
+  patient_ids_train = patient_ids[int(len(patient_ids)*validation_split ):]
+  patient_ids_validation = patient_ids[: int(len(patient_ids)*validation_split)]
+
+  train_gen = det_gen(df,patient_ids_train , img_path ,batch_size=batch_size, dim=dim, n_channels=n_channels,
+                 n_classes=n_classes, shuffle=shuffle,transform=transform, preprocess = preprocess)
+
+  validation_gen = det_gen(df, patient_ids_validation, img_path, batch_size=batch_size, dim=dim, n_channels=n_channels,
+                      n_classes=n_classes, shuffle=shuffle, transform=transform, preprocess=preprocess)
+
+
+  return train_gen, validation_gen
+
+
