@@ -6,19 +6,9 @@ import pydicom
 import cv2
 import tensorflow
 from skimage.transform import resize
+import random
+import cv2
 
-
-def process_labels(df):  # Converts labels to binary
-
-    labels = df[" EncodedPixels"].to_list()
-    a = []
-    for i in labels:
-        if i == ' -1':
-            a.append(0)
-        else:
-            a.append(1)
-    df["Class"] = np.array(a, dtype='uint8')
-    return df
 
 
 def add_full_path(df, train_path):
@@ -77,28 +67,36 @@ def rle2mask(rle, width, height):
 
     return mask.reshape(width, height)
 
+def masks_as_image(rle_list, shape):
+    # Take the individual masks and create a single mask array
+    all_masks = np.zeros(shape, dtype=np.uint8)
+    for mask in rle_list:
+        if isinstance(mask, str) and mask != '-1':
+            all_masks |= rle2mask(mask, shape[0], shape[1]).T.astype(bool)
+    return all_masks
+
 
 class Seg_gen(tensorflow.keras.utils.Sequence):
     'Generates data from a Dataframe'
 
-    def __init__(self, df_path, train_path, preprocess_fct, batch_size=32, dim=(1024, 1024), shuffle=True):
+    def __init__(self, df_path,patient_ids, train_path, preprocess_fct=None, batch_size=32, dim=(256, 256), shuffle=True , n_channels=3):
         'Initialization'
-
-        train_filenames = os.listdir(train_path)
+        
         rle_csv = pd.read_csv(df_path)
-
-        rle_csv = process_labels(rle_csv)
+    
         self.df = add_full_path(rle_csv, train_path)
-
+        
+        self.patient_ids = patient_ids
+        
         self.preprocess_fct = preprocess_fct
         self.dim = dim
         self.batch_size = batch_size
         self.shuffle = shuffle
 
-        self.n = len(self.df)
+        self.n = len(self.patient_ids)
         self.nb_iteration = int(np.floor(self.n / self.batch_size))
-
-        self.on_epoch_end()
+        
+        self.n_channels = n_channels
 
     def __len__(self):
         'Denotes the number of batches per epoch'
@@ -107,8 +105,9 @@ class Seg_gen(tensorflow.keras.utils.Sequence):
     def __getitem__(self, index):
         'Generate one batch of data'
         # Generate indexes of the batch
-        indexes = self.indexes[index * self.batch_size:(index + 1) * self.batch_size]
-
+        
+        indexes = range(index*self.batch_size, min((index*self.batch_size)+self.batch_size ,len(self.patient_ids) ))
+        
         # Generate data
         X, y = self.__data_generation(indexes)
 
@@ -116,26 +115,30 @@ class Seg_gen(tensorflow.keras.utils.Sequence):
 
     def on_epoch_end(self):
         'Updates indexes after each epoch'
-        self.indexes = np.arange(len(self.df))
-        if self.shuffle == True:
-            np.random.shuffle(self.indexes)
+        random.shuffle(self.patient_ids)
 
     def __data_generation(self, index):
         'Generates data containing batch_size samples'  # X : (n_samples, *dim, n_channels)
         # Initialization
 
-        X = np.empty((self.batch_size, *self.dim))
-        Y = np.empty((self.batch_size, *self.dim))
-
+        X = []#np.empty((self.batch_size, self.dim[0],self.dim[1],self.n_channels))
+        Y = []#np.empty((self.batch_size,  self.dim[0],self.dim[1]))
+        
+        patient_ids= self.patient_ids[index]
         # Generate data
-        for i, ID in enumerate(index):
+        for i, ID in enumerate(patient_ids):
             # Read the image
-            img = pydicom.dcmread(self.df['full_path'][ID]).pixel_array
-            mask = rle2mask(self.df[' EncodedPixels'][ID], *img.shape).T / 255
-
+            filtered_dataframe = self.df[self.df["ImageId"]==ID]
+            
+            img = pydicom.dcmread(filtered_dataframe['full_path'].iloc[0]).pixel_array
+            mask = masks_as_image(filtered_dataframe[' EncodedPixels'], (1024,1024))
+            
+            
+            if self.n_channels == 3:
+                img = cv2.cvtColor(np.array(img, dtype=np.uint8), cv2.COLOR_GRAY2RGB)
+            
             img = np.asarray(cv2.resize(img, self.dim))
-            # mask = np.asarray(cv2.resize(mask, self.dim, interpolation = cv2.INTER_AREA ))
-
+            
             mask = resize(mask,
                           self.dim,
                           mode='edge',
@@ -144,7 +147,31 @@ class Seg_gen(tensorflow.keras.utils.Sequence):
                           preserve_range=True,
                           order=0)
 
-            X[i,] = np.asarray(img)  # self.preprocess_fct(np.asarray(img))
-            Y[i,] = np.asarray(mask)
+            X.append(np.asarray(img))  # self.preprocess_fct(np.asarray(img))
+            Y.append(np.asarray(mask))
 
-        return X, Y
+        return np.array(X), np.array(Y)
+    
+    
+def get_train_validation_generator(csv_path,img_path ,batch_size=8, dim=(256,256), n_channels=3, shuffle=True ,preprocess = None , only_positive=True, validation_split=0.2 ):
+
+
+  df = pd.read_csv(csv_path)
+  if only_positive:
+    df = df[df[" EncodedPixels"]!=' -1']
+
+  random.seed(42)
+  patient_ids = df["ImageId"].unique()
+  random.shuffle(patient_ids)
+
+  patient_ids_train = patient_ids[int(len(patient_ids)*validation_split ):]
+  patient_ids_validation = patient_ids[: int(len(patient_ids)*validation_split)]
+
+  train_gen = Seg_gen(csv_path,patient_ids_train , img_path ,batch_size=batch_size, dim=dim, n_channels=n_channels,
+                         shuffle=shuffle, preprocess_fct = preprocess)
+
+  validation_gen = Seg_gen(csv_path, patient_ids_validation, img_path, batch_size=batch_size, dim=dim, n_channels=n_channels,
+                       shuffle=shuffle,  preprocess_fct=preprocess)
+
+
+  return train_gen, validation_gen
