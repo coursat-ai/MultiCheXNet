@@ -1,10 +1,6 @@
 import os
 import pydicom
-import cv2
-import skimage
-from skimage import color
 from skimage import exposure
-import tensorflow as tf
 import numpy as np
 import tensorflow
 import random
@@ -132,7 +128,7 @@ def get_train_validation_generator(csv_path,img_path ,batch_size=8, dim=(256,256
 
   df = pd.read_csv(csv_path)
   if only_positive:
-    df = df[self.df["Target"] == 1]
+    df = df[df["Target"] == 1]
 
   random.seed(42)
   patient_ids = df["PatientId"].unique()

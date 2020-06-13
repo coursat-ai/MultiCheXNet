@@ -3,7 +3,6 @@ import numpy as np
 import pandas as pd
 from glob import glob
 import pydicom
-import cv2
 import tensorflow
 from skimage.transform import resize
 import random
@@ -20,34 +19,6 @@ def add_full_path(df, train_path):
     df['full_path'] = dataset_path
 
     return df
-
-
-def mask2rle(img, width, height):
-    rle = []
-    lastColor = 0;
-    currentPixel = 0;
-    runStart = -1;
-    runLength = 0;
-
-    for x in range(width):
-        for y in range(height):
-            currentColor = img[x][y]
-            if currentColor != lastColor:
-                if currentColor == 255:
-                    runStart = currentPixel;
-                    runLength = 1;
-                else:
-                    rle.append(str(runStart));
-                    rle.append(str(runLength));
-                    runStart = -1;
-                    runLength = 0;
-                    currentPixel = 0;
-            elif runStart > -1:
-                runLength += 1
-            lastColor = currentColor;
-            currentPixel += 1;
-
-    return " ".join(rle)
 
 
 def rle2mask(rle, width, height):
@@ -154,7 +125,6 @@ class Seg_gen(tensorflow.keras.utils.Sequence):
     
     
 def get_train_validation_generator(csv_path,img_path ,batch_size=8, dim=(256,256), n_channels=3, shuffle=True ,preprocess = None , only_positive=True, validation_split=0.2 ):
-
 
   df = pd.read_csv(csv_path)
   if only_positive:
