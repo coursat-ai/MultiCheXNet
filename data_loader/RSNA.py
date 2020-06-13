@@ -9,6 +9,7 @@ import numpy as np
 import tensorflow
 import random
 import pandas as pd
+import cv2
 
 def bbToYoloFormat(bb):
     """
@@ -115,7 +116,7 @@ class det_gen(tensorflow.keras.utils.Sequence):
         a = dcm_data.pixel_array
         a=cv2.resize(a,(self.dim))
         if self.n_channels == 3:
-            a = skimage.color.gray2rgb(a)
+            a = cv2.cvtColor(np.array(a, dtype=np.uint8), cv2.COLOR_GRAY2RGB)
 
         if self.preprocess != None:
             a= self.preprocess(a)
