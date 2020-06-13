@@ -54,7 +54,7 @@ def processGroundTruth(bb, labels, priors, network_output_shape):
 class det_gen(tensorflow.keras.utils.Sequence):
     'Generates data from a Dataframe'
     def __init__(self,csv_file,patientId , img_path ,batch_size=8, dim=(256,256), n_channels=3,
-                 n_classes=1, shuffle=True,transform=None, preprocess = None):
+                  shuffle=True, preprocess = None):
 
         self.df = csv_file
         self.shuffle = shuffle
@@ -123,7 +123,7 @@ class det_gen(tensorflow.keras.utils.Sequence):
 
 
 def get_train_validation_generator(csv_path,img_path ,batch_size=8, dim=(256,256), n_channels=3,
-                 n_classes=1, shuffle=True,transform=None ,preprocess = None , only_positive=True, validation_split=0.2 ):
+                  shuffle=True,transform=None ,preprocess = None , only_positive=True, validation_split=0.2 ):
 
 
   df = pd.read_csv(csv_path)
@@ -138,10 +138,10 @@ def get_train_validation_generator(csv_path,img_path ,batch_size=8, dim=(256,256
   patient_ids_validation = patient_ids[: int(len(patient_ids)*validation_split)]
 
   train_gen = det_gen(df,patient_ids_train , img_path ,batch_size=batch_size, dim=dim, n_channels=n_channels,
-                 n_classes=n_classes, shuffle=shuffle,transform=transform, preprocess = preprocess)
+                shuffle=shuffle,transform=transform, preprocess = preprocess)
 
   validation_gen = det_gen(df, patient_ids_validation, img_path, batch_size=batch_size, dim=dim, n_channels=n_channels,
-                      n_classes=n_classes, shuffle=shuffle, transform=transform, preprocess=preprocess)
+                       shuffle=shuffle, transform=transform, preprocess=preprocess)
 
 
   return train_gen, validation_gen
