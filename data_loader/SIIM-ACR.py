@@ -1,89 +1,150 @@
-class DataGenerator(Sequence):
-    def __init__(self, train_data_paths, csv_datafile, batch_size=32,
-                 img_size=(256,256), transform=None, debug= False, shuffle=True, n_channels = 1):
+import os
+import numpy as np
+import pandas as pd
+from glob import glob
+import pydicom
+import cv2
+import tensorflow
+from skimage.transform import resize
 
-        self.traindata_paths = train_data_paths
-        self.stage2_annotations = csv_datafile
-        self.batch_size = 32
-        self.img_size = img_size
-        self.n_channels = n_channels
-        self.transform = transform
+
+def process_labels(df):  # Converts labels to binary
+
+    labels = df[" EncodedPixels"].to_list()
+    a = []
+    for i in labels:
+        if i == ' -1':
+            a.append(0)
+        else:
+            a.append(1)
+    df["Class"] = np.array(a, dtype='uint8')
+    return df
+
+
+def add_full_path(df, train_path):
+    my_glob = glob(train_path + '/*/*/*.dcm')
+
+    full_img_paths = {os.path.basename(x).split('.dcm')[0]: x for x in my_glob}
+    dataset_path = df['ImageId'].map(full_img_paths.get)
+
+    df['full_path'] = dataset_path
+
+    return df
+
+
+def mask2rle(img, width, height):
+    rle = []
+    lastColor = 0;
+    currentPixel = 0;
+    runStart = -1;
+    runLength = 0;
+
+    for x in range(width):
+        for y in range(height):
+            currentColor = img[x][y]
+            if currentColor != lastColor:
+                if currentColor == 255:
+                    runStart = currentPixel;
+                    runLength = 1;
+                else:
+                    rle.append(str(runStart));
+                    rle.append(str(runLength));
+                    runStart = -1;
+                    runLength = 0;
+                    currentPixel = 0;
+            elif runStart > -1:
+                runLength += 1
+            lastColor = currentColor;
+            currentPixel += 1;
+
+    return " ".join(rle)
+
+
+def rle2mask(rle, width, height):
+    if rle == ' -1':
+        rle = '0 0'
+
+    mask = np.zeros(width * height)
+    array = np.asarray([int(x) for x in rle.split()])
+    starts = array[0::2]
+    lengths = array[1::2]
+
+    current_position = 0
+    for index, start in enumerate(starts):
+        current_position += start
+        mask[current_position:current_position + lengths[index]] = 255
+        current_position += lengths[index]
+
+    return mask.reshape(width, height)
+
+
+class Seg_gen(tensorflow.keras.utils.Sequence):
+    'Generates data from a Dataframe'
+
+    def __init__(self, df_path, train_path, preprocess_fct, batch_size=32, dim=(1024, 1024), shuffle=True):
+        'Initialization'
+
+        train_filenames = os.listdir(train_path)
+        rle_csv = pd.read_csv(df_path)
+
+        rle_csv = process_labels(rle_csv)
+        self.df = add_full_path(rle_csv, train_path)
+
+        self.preprocess_fct = preprocess_fct
+        self.dim = dim
+        self.batch_size = batch_size
         self.shuffle = shuffle
-        self.debug = debug
-        self.clahe = cv2.createCLAHE(clipLimit=2, tileGridSize=(8,8))
+
+        self.n = len(self.df)
+        self.nb_iteration = int(np.floor(self.n / self.batch_size))
+
         self.on_epoch_end()
 
+    def __len__(self):
+        'Denotes the number of batches per epoch'
+        return self.nb_iteration
+
+    def __getitem__(self, index):
+        'Generate one batch of data'
+        # Generate indexes of the batch
+        indexes = self.indexes[index * self.batch_size:(index + 1) * self.batch_size]
+
+        # Generate data
+        X, y = self.__data_generation(indexes)
+
+        return X, y
+
     def on_epoch_end(self):
-        '''
-         Updates indexes after each epoch'''
-        self.indexes = np.arange(len(self.traindata_paths))
+        'Updates indexes after each epoch'
+        self.indexes = np.arange(len(self.df))
         if self.shuffle == True:
             np.random.shuffle(self.indexes)
 
-    def __len__(self):
-        '''Denotes the number of batches per epoch
-        returns:-
-          number of batches per epoch'''
-        return int(np.floor(len(self.traindata_paths) / self.batch_size))
+    def __data_generation(self, index):
+        'Generates data containing batch_size samples'  # X : (n_samples, *dim, n_channels)
+        # Initialization
 
-    def __getitem__(self, index):
-        '''Generate one batch of data
-        args:-
-            index: index of the batch
-        returns:
-            imgs and masks when fitting, imgs only when predicting'''
+        X = np.empty((self.batch_size, *self.dim))
+        Y = np.empty((self.batch_size, *self.dim))
 
-        #Generate indexes of the batch
-        indexes = self.indexes[index*self.batch_size:(index+1)*self.batch_size]
+        # Generate data
+        for i, ID in enumerate(index):
+            # Read the image
+            img = pydicom.dcmread(self.df['full_path'][ID]).pixel_array
+            mask = rle2mask(self.df[' EncodedPixels'][ID], *img.shape).T / 255
 
-        #Find the list of patientIds
-        list_IDs_batch = [self.traindata_paths[k] for k in indexes]
+            img = np.asarray(cv2.resize(img, self.dim))
+            # mask = np.asarray(cv2.resize(mask, self.dim, interpolation = cv2.INTER_AREA ))
 
-        imgs, masks = self.__data_generation(list_IDs_batch)
+            mask = resize(mask,
+                          self.dim,
+                          mode='edge',
+                          anti_aliasing=False,
+                          anti_aliasing_sigma=None,
+                          preserve_range=True,
+                          order=0)
 
-        if self.transform is None:
-            if self.debug:
-                return list_IDs_batch, imgs/255,masks/255
-            else:
-                return imgs/255.0,masks/255.0
-        else:
-            aug_imgs,aug_masks = [],[]
-            for img,msk in zip(imgs,masks):
-                augmented = self.transform(image=img, mask=msk)
-                aug_imgs.append(augmented['image'])
-                aug_masks.append(augmented['mask'])
-            if self.debug:
-                return list_IDs_batch, np.array(aug_imgs)/255, np.array(aug_masks)/255
-            else:
-                return np.array(aug_imgs)/255, np.array(aug_masks)/255
+            X[i,] = np.asarray(img)  # self.preprocess_fct(np.asarray(img))
+            Y[i,] = np.asarray(mask)
 
-
-    def __data_generation(self, list_ID_batch):
-        imgs = np.empty((self.batch_size, *self.img_size, self.n_channels))
-        masks = np.empty((self.batch_size, *self.img_size, 1))
-
-        for i, ID in enumerate(list_ID_batch):
-            imgs[i,]= self.get_img(ID, self.img_size)
-            masks[i,]= self.get_mask(ID, self.img_size, self.stage2_annotations)
-        return imgs, masks
-
-
-    def get_img(self, img_path, img_size):
-        dicom_data = pydicom.dcmread(img_path)
-        image = dicom_data.pixel_array
-        img = cv2.resize(image, img_size, cv2.INTER_LINEAR)
-        clahe_img = self.clahe.apply(img)
-        clahe_img = np.expand_dims(clahe_img, axis=2)
-
-        return clahe_img
-
-    def get_mask(self, img_path, img_size, stage2_annotations):
-        patient_id = img_path.split('/')[-1][:-4]
-        rle = stage2_annotations.loc[stage2_annotations['ImageId'] == patient_id]['EncodedPixels'].values[0]
-        if rle != '-1':
-            mask = rle2mask(rle, 1024, 1024).T
-            mask = cv2.resize(mask, img_size, cv2.INTER_LINEAR)
-            mask = np.expand_dims(mask, axis=2)
-        else :
-            mask = np.zeros((img_size[0], img_size[1], 1))
-        return mask
+        return X, Y
