@@ -123,7 +123,7 @@ class det_gen(tensorflow.keras.utils.Sequence):
 
 
 def get_train_validation_generator(csv_path,img_path ,batch_size=8, dim=(256,256), n_channels=3,
-                  shuffle=True,transform=None ,preprocess = None , only_positive=True, validation_split=0.2 ):
+                  shuffle=True ,preprocess = None , only_positive=True, validation_split=0.2 ):
 
 
   df = pd.read_csv(csv_path)
@@ -138,11 +138,10 @@ def get_train_validation_generator(csv_path,img_path ,batch_size=8, dim=(256,256
   patient_ids_validation = patient_ids[: int(len(patient_ids)*validation_split)]
 
   train_gen = det_gen(df,patient_ids_train , img_path ,batch_size=batch_size, dim=dim, n_channels=n_channels,
-                shuffle=shuffle,transform=transform, preprocess = preprocess)
+                shuffle=shuffle, preprocess = preprocess)
 
   validation_gen = det_gen(df, patient_ids_validation, img_path, batch_size=batch_size, dim=dim, n_channels=n_channels,
-                       shuffle=shuffle, transform=transform, preprocess=preprocess)
-
+                       shuffle=shuffle, preprocess=preprocess)
 
   return train_gen, validation_gen
 
