@@ -123,8 +123,8 @@ class Seg_gen(tensorflow.keras.utils.Sequence):
 
             X.append(np.asarray(img))  # self.preprocess_fct(np.asarray(img))
             Y.append(np.asarray(mask))
-
-        return np.array(X), np.array(Y)
+        
+        return np.array(X), np.expand_dims(np.array(Y),axis=3)
     
     
 def get_train_validation_generator(csv_path,img_path ,batch_size=8, dim=(256,256), n_channels=3, shuffle=True ,preprocess = None , only_positive=True, validation_split=0.2 ):
