@@ -131,7 +131,7 @@ def get_train_validation_generator(csv_path,img_path ,batch_size=8, dim=(256,256
     df = df[df["Target"] == 1]
 
   random.seed(42)
-  patient_ids = df["PatientId"].unique()
+  patient_ids = df["patientId"].unique()
   random.shuffle(patient_ids)
 
   patient_ids_train = patient_ids[int(len(patient_ids)*validation_split ):]
