@@ -63,7 +63,7 @@ class Segmenter(ModelBlock):
             keras model:
         """
         db5 = self.encoder.output #(8,8,1024)
-        tu5 = self.transition_up(db5, encoder, skip_layers[0], 3)
+        tu5 = self.transition_up(db5, skip_layers[0], 3)
 
         db6 = self.dense_block(tu5, blocks[-1], name='conv6')
         tu6 = self.transition_up(db6, skip_layers[1], 3)
