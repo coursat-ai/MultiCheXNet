@@ -19,7 +19,7 @@ class Segmenter(ModelBlock):
             output tensor for the block.
         """
         for i in range(blocks):
-            x = conv_block(x, 32, name=name + '_block' + str(i + 1))
+            x = self.conv_block(x, 32, name=name + '_block' + str(i + 1))
         return x
 
     def conv_block(self, x, growth_rate, name):
