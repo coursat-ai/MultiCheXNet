@@ -63,15 +63,15 @@ class Segmenter(ModelBlock):
             keras model:
         """
         db5 = self.encoder.output #(8,8,1024)
-        tu5 = transition_up(db5, encoder, skip_layers[0], 3)
+        tu5 = self.transition_up(db5, encoder, skip_layers[0], 3)
 
-        db6 = dense_block(tu5, blocks[-1], name='conv6')
-        tu6 = transition_up(db6, skip_layers[1], 3)
+        db6 = self.dense_block(tu5, blocks[-1], name='conv6')
+        tu6 = self.transition_up(db6, skip_layers[1], 3)
 
-        db7 = dense_block(tu6, blocks[-2], name='conv7')
-        tu7 = transition_up(db7, skip_layers[2], 3)
+        db7 = self.dense_block(tu6, blocks[-2], name='conv7')
+        tu7 = self.transition_up(db7, skip_layers[2], 3)
 
-        db8 = dense_block(tu7, blocks[-3], name='conv8')
+        db8 = self.dense_block(tu7, blocks[-3], name='conv8')
         tu8 = Conv2DTranspose(256, (3, 3), strides = (2, 2), padding = 'same')(db8)#(128,128,)
 
         uconv9 = Conv2D(512, (3, 3), activation = 'relu', padding = 'same')(tu8)
