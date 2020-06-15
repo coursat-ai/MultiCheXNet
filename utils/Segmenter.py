@@ -1,7 +1,7 @@
 from .ModelBlock import ModelBlock
 from tensorflow.keras.layers import *
 from tensorflow.keras.losses import BinaryCrossentropy
-import tensorflow.keras as K
+import tensorflow.keras.backend as K
 class Segmenter(ModelBlock):
     def __init__(self, encoder):
         self.encoder = encoder.model
