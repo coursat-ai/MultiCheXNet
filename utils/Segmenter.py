@@ -1,5 +1,7 @@
 from .ModelBlock import ModelBlock
 from tensorflow.keras.layers import *
+from tensorflow.keras.losses import BinaryCrossentropy
+import tensorflow.keras as K
 class Segmenter(ModelBlock):
     def __init__(self, encoder):
         self.encoder = encoder.model
@@ -75,5 +77,26 @@ class Segmenter(ModelBlock):
         uconv9 = Conv2D(512, (3, 3), activation = 'relu', padding = 'same')(tu8)
         tu9 = Conv2DTranspose(256, (3, 3), strides = (2, 2), padding = 'same')(uconv9)#(256,256,)
         outputs = Conv2D(1, (1, 1), activation = 'sigmoid')(tu9)
+
         return outputs
+
+    def loss(self,y_true,y_pred):
+        return dice_loss(y_true, y_pred)
+
+
         
+#refrence: https://gist.github.com/wassname/7793e2058c5c9dacb5212c0ac0b18a8a
+def dice_loss(y_true, y_pred):
+    smooth = 1.
+    y_true_f = K.flatten(y_true)
+    y_pred_f = K.flatten(y_pred)
+
+    intersection = y_true_f * y_pred_f
+    score = (200. * K.sum(intersection) + smooth) / (100. * K.sum(y_true_f) + 100.* K.sum(y_pred_f) + smooth)
+    return  (1. - score)
+
+def bce_dice_loss(y_true, y_pred):
+    return BinaryCrossentropy(y_true, y_pred) + dice_loss(y_true, y_pred)
+
+def bce_logdice_loss(y_true, y_pred):
+    return BinaryCrossentropy(y_true, y_pred) - K.log(1. - dice_loss(y_true, y_pred))
