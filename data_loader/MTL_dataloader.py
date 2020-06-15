@@ -36,16 +36,20 @@ class MTL_generatot(tensorflow.keras.utils.Sequence):
         if self.batch_number % 2 == 0:
             X, Y_seg = next(iter(self.seg_generator))
             Y_class = [[0, 1, 0]] * self.batch_size
-            Y_det = None
+            Y_class = np.array(Y_class)
+            Y_seg= np.array(Y_seg)
+            Y_det = []
 
         else:
             X, Y_det = next(iter(self.det_generator))
             Y_class = [[0, 0, 1]] * self.batch_size
-            Y_seg = None
+            Y_class = np.array(Y_class)
+            Y_det= np.array(Y_det)
+            Y_seg = []
 
         self.batch_number += 1
 
-        return X, np.array([np.array(Y_class), np.array(Y_det), np.array(Y_seg)])
+        return X, [np.array(Y_class), np.array(Y_det), np.array(Y_seg)]
 
 def get_train_validation_generator(det_csv_path,seg_csv_path , det_img_path, seg_img_path ,batch_size=8, dim=(256,256), n_channels=3,
                   shuffle=True ,preprocess = None , only_positive=True, validation_split=0.2 ):
