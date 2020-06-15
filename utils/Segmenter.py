@@ -2,6 +2,8 @@ from .ModelBlock import ModelBlock
 from tensorflow.keras.layers import *
 from tensorflow.keras.losses import BinaryCrossentropy
 import tensorflow.keras.backend as K
+import tensorflow as tf
+
 class Segmenter(ModelBlock):
     def __init__(self, encoder):
         self.encoder = encoder.model
@@ -79,8 +81,11 @@ class Segmenter(ModelBlock):
         outputs = Conv2D(1, (1, 1), activation = 'sigmoid')(tu9)
 
         return outputs
-
+    
+    @tf.function
     def loss(self,y_true,y_pred):
+        if tf.math.reduce_all(tf.math.equal(y_true,-1)):
+            return  tf.convert_to_tensor(0, dtype=tf.float32)
         return dice_loss(y_true, y_pred)
 
 
