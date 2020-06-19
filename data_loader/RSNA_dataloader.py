@@ -7,6 +7,23 @@ import random
 import pandas as pd
 import cv2
 
+from albumentations import (
+    Compose, HorizontalFlip, CLAHE, HueSaturationValue,
+    RandomBrightness, RandomContrast, RandomGamma,OneOf,
+    ToFloat, GridDistortion, ElasticTransform, OpticalDistortion, 
+    RandomSizedCrop,Rotate
+)
+
+h,w = 256,256
+AUGMENTATIONS_TRAIN = Compose([
+    #HorizontalFlip(p=0.5),
+    OneOf([
+        RandomGamma(),
+        RandomBrightness(),
+         ], p=0.3)
+    ],p=1)
+
+
 def bbToYoloFormat(bb):
     """
     converts (left, top, right, bottom) to
@@ -54,7 +71,7 @@ def processGroundTruth(bb, labels, priors, network_output_shape):
 class det_gen(tensorflow.keras.utils.Sequence):
     'Generates data from a Dataframe'
     def __init__(self,csv_file,patientId , img_path ,batch_size=8, dim=(256,256), n_channels=3,
-                  shuffle=True, preprocess = None):
+                  shuffle=True, preprocess = None, augmentation=False,normalize=False,hist_eq =False ):
 
         self.df = csv_file
         self.shuffle = shuffle
@@ -63,6 +80,9 @@ class det_gen(tensorflow.keras.utils.Sequence):
         self.batch_size = batch_size
         self.nb_iteration = int(len(self.patient_ids)/self.batch_size)
         self.dim = dim
+        self.augmentation=augmentation
+        self.normalize=normalize
+        self.hist_eq=hist_eq
         self.n_channels= n_channels
         self.preprocess =preprocess
         self.TINY_YOLOV2_ANCHOR_PRIORS = np.array([1.08, 1.19, 3.42, 4.41, 6.63, 11.38, 9.42, 5.11, 16.62, 10.52]).reshape(5, 2)
@@ -81,15 +101,16 @@ class det_gen(tensorflow.keras.utils.Sequence):
         'Generate one batch of data'
         indicies = range(index*self.batch_size, min((index*self.batch_size)+self.batch_size ,len(self.patient_ids) ))
         patientIds = self.patient_ids[indicies]
-        X = np.zeros((self.batch_size, self.dim[0], self.dim[1],self.n_channels))
+        X =[]# np.zeros((self.batch_size, self.dim[0], self.dim[1],self.n_channels))
         y_boxes = []
-        y = np.zeros((self.batch_size,self.network_output_shape[0],self.network_output_shape[1],self.network_output_shape[2],self.network_output_shape[3]))
+        #y = np.zeros((self.batch_size,self.network_output_shape[0],self.network_output_shape[1],self.network_output_shape[2],self.network_output_shape[3]))
+        y=[]
         output_labels = []
         for index , patientId in enumerate(patientIds):
             filtered_df = self.df[self.df["patientId"] == patientId]
             img_path = os.path.join(self.img_path,patientId+".dcm" )
             img = self.load_img(img_path)
-            X[index]= img
+            
             y_boxes = []
             labels = []
             for i, row in filtered_df.iterrows():
@@ -104,8 +125,22 @@ class det_gen(tensorflow.keras.utils.Sequence):
                 y_boxes.append([xmin,ymin,xmax,ymax])
                 labels.append([1])
             #run preprocess_bboxes
-            y[index] = processGroundTruth(np.array(y_boxes),np.array(labels), self.TINY_YOLOV2_ANCHOR_PRIORS , self.network_output_shape)
-        return X, y
+            #y[index] = processGroundTruth(np.array(y_boxes),np.array(labels), self.TINY_YOLOV2_ANCHOR_PRIORS , self.network_output_shape)
+            if self.augmentation=='train':
+                aug= AUGMENTATIONS_TRAIN(image=img,bboxes=y_boxes)
+                img=aug['image']
+
+            if self.hist_eq:
+                img= exposure.equalize_adapthist(img)
+            
+            if self.normalize and img.max()>1:
+                img=np.array(img,np.float32)/255
+            
+            X.append(img)
+            
+            y_boxes= processGroundTruth(np.array(y_boxes),np.array(labels), self.TINY_YOLOV2_ANCHOR_PRIORS , self.network_output_shape)
+            y.append(y_boxes)
+        return np.array(X), np.array(y)
 
     def load_img(self,img_path):
         dcm_data = pydicom.read_file(img_path)
@@ -116,14 +151,13 @@ class det_gen(tensorflow.keras.utils.Sequence):
 
         if self.preprocess != None:
             a= self.preprocess(a)
-
-        a = exposure.equalize_adapthist(a)
+            
 
         return a
 
 
 def get_train_validation_generator(csv_path,img_path ,batch_size=8, dim=(256,256), n_channels=3,
-                  shuffle=True ,preprocess = None , only_positive=True, validation_split=0.2 ):
+                  shuffle=True ,preprocess = None , only_positive=True, validation_split=0.2,augmentation=False,normalize=False,hist_eq =False  ):
 
 
   df = pd.read_csv(csv_path)
@@ -137,12 +171,14 @@ def get_train_validation_generator(csv_path,img_path ,batch_size=8, dim=(256,256
   patient_ids_train = patient_ids[int(len(patient_ids)*validation_split ):]
   patient_ids_validation = patient_ids[: int(len(patient_ids)*validation_split)]
 
+  if augmentation == True:
+        augmentation='train'
   train_gen = det_gen(df,patient_ids_train , img_path ,batch_size=batch_size, dim=dim, n_channels=n_channels,
-                shuffle=shuffle, preprocess = preprocess)
-
+                shuffle=shuffle, preprocess = preprocess,augmentation=augmentation,normalize=normalize,hist_eq =hist_eq )
+  
+  if augmentation == 'train':
+    augmentation='validation'
   validation_gen = det_gen(df, patient_ids_validation, img_path, batch_size=batch_size, dim=dim, n_channels=n_channels,
-                       shuffle=shuffle, preprocess=preprocess)
+                       shuffle=shuffle, preprocess=preprocess,augmentation=augmentation,normalize=normalize,hist_eq =hist_eq)
 
   return train_gen, validation_gen
-
-
