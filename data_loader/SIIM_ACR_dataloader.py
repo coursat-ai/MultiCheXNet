@@ -12,7 +12,7 @@ from albumentations import (
     Compose, HorizontalFlip, CLAHE, HueSaturationValue,
     RandomBrightness, RandomContrast, RandomGamma,OneOf,
     ToFloat, GridDistortion, ElasticTransform, OpticalDistortion, 
-    RandomSizedCrop
+    RandomSizedCrop,Rotate
 )
 
 h,w = 256,256
@@ -28,13 +28,8 @@ AUGMENTATIONS_TRAIN = Compose([
         GridDistortion(),
         OpticalDistortion(distort_limit=2, shift_limit=0.5),
         ], p=0.3),
-    RandomSizedCrop(min_max_height=(176, 256), height=h, width=w,p=0.25),
-    ToFloat(max_value=1)],p=1)
-
-
-AUGMENTATIONS_TEST = Compose([
-    ToFloat(max_value=1)
-],p=1)
+    Rotate(limit=15, p=0.2),
+    RandomSizedCrop(min_max_height=(176, 256), height=h, width=w,p=0.25)],p=1)
 
 
 def add_full_path(df, train_path):
@@ -153,26 +148,23 @@ class Seg_gen(tensorflow.keras.utils.Sequence):
                           order=0)
             
             
-            if self.hist_eq:
-                exposure.equalize_adapthist(img)
-            
             if self.augmentation=='train':
                 aug= AUGMENTATIONS_TRAIN(image=img,mask=mask)
                 img=aug['image']
                 mask=aug['mask']
-                
-            elif self.augmentation  =='validation':
-                aug= AUGMENTATIONS_TEST(image=img,mask=mask)
-                img=aug['image']
-                mask=aug['mask']
             
-            if self.normalize:
+            
+            if self.hist_eq:
+                img= exposure.equalize_adapthist(img)
+            
+            
+            if self.normalize and img.max()>1:
                 img=np.array(img,np.float32)/255
             
             
             
             X.append(np.asarray(img))  # self.preprocess_fct(np.asarray(img))
-            Y.append(np.asarray(mask))
+            Y.append(np.asarray(mask, dtype=np.int8))
         
         return np.array(X), np.expand_dims(np.array(Y),axis=3)
     
@@ -195,8 +187,9 @@ def get_train_validation_generator(csv_path,img_path ,batch_size=8, dim=(256,256
   train_gen = Seg_gen(csv_path,patient_ids_train , img_path ,batch_size=batch_size, dim=dim, n_channels=n_channels,
                          shuffle=shuffle, preprocess_fct = preprocess,augmentation=augmentation, normalize=normalize,hist_eq=hist_eq)
 
-  if augmentation == True:
+  if augmentation == 'train':
         augmentation='validation'
+        
   validation_gen = Seg_gen(csv_path, patient_ids_validation, img_path, batch_size=batch_size, dim=dim, n_channels=n_channels,
                        shuffle=shuffle,  preprocess_fct=preprocess,augmentation=augmentation, normalize=normalize,hist_eq=hist_eq)
 
