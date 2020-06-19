@@ -7,7 +7,34 @@ import tensorflow
 from skimage.transform import resize
 import random
 import cv2
+from skimage import exposure
+from albumentations import (
+    Compose, HorizontalFlip, CLAHE, HueSaturationValue,
+    RandomBrightness, RandomContrast, RandomGamma,OneOf,
+    ToFloat, GridDistortion, ElasticTransform, OpticalDistortion, 
+    RandomSizedCrop
+)
 
+h,w = 256,256
+AUGMENTATIONS_TRAIN = Compose([
+    HorizontalFlip(p=0.5),
+    OneOf([
+        
+        RandomGamma(),
+        RandomBrightness(),
+         ], p=0.3),
+    OneOf([
+        ElasticTransform(alpha=120, sigma=120 * 0.05, alpha_affine=120 * 0.03),
+        GridDistortion(),
+        OpticalDistortion(distort_limit=2, shift_limit=0.5),
+        ], p=0.3),
+    RandomSizedCrop(min_max_height=(176, 256), height=h, width=w,p=0.25),
+    ToFloat(max_value=1)],p=1)
+
+
+AUGMENTATIONS_TEST = Compose([
+    ToFloat(max_value=1)
+],p=1)
 
 
 def add_full_path(df, train_path):
@@ -50,7 +77,7 @@ def masks_as_image(rle_list, shape):
 class Seg_gen(tensorflow.keras.utils.Sequence):
     'Generates data from a Dataframe'
 
-    def __init__(self, df_path,patient_ids, train_path, preprocess_fct=None, batch_size=32, dim=(256, 256), shuffle=True , n_channels=3):
+    def __init__(self, df_path,patient_ids, train_path, preprocess_fct=None, batch_size=32, dim=(256, 256), shuffle=True , n_channels=3,augmentation=None,normalize=False,hist_eq=False):
         'Initialization'
         
         rle_csv = pd.read_csv(df_path)
@@ -63,6 +90,10 @@ class Seg_gen(tensorflow.keras.utils.Sequence):
         self.dim = dim
         self.batch_size = batch_size
         self.shuffle = shuffle
+        
+        self.normalize = normalize
+        self.augmentation= augmentation
+        self.hist_eq = hist_eq
 
         self.n = len(self.patient_ids)
         self.nb_iteration = int(np.floor(self.n / self.batch_size))
@@ -120,14 +151,33 @@ class Seg_gen(tensorflow.keras.utils.Sequence):
                           anti_aliasing_sigma=None,
                           preserve_range=True,
                           order=0)
-
+            
+            
+            if self.hist_eq:
+                exposure.equalize_adapthist(img)
+            
+            if self.augmentation=='train':
+                aug= AUGMENTATIONS_TRAIN(image=img,mask=mask)
+                img=aug['image']
+                mask=aug['mask']
+                
+            elif self.augmentation  =='validation':
+                aug= AUGMENTATIONS_TEST(image=img,mask=mask)
+                img=aug['image']
+                mask=aug['mask']
+            
+            if self.normalize:
+                img=np.array(img,np.float32)/255
+            
+            
+            
             X.append(np.asarray(img))  # self.preprocess_fct(np.asarray(img))
             Y.append(np.asarray(mask))
         
         return np.array(X), np.expand_dims(np.array(Y),axis=3)
     
     
-def get_train_validation_generator(csv_path,img_path ,batch_size=8, dim=(256,256), n_channels=3, shuffle=True ,preprocess = None , only_positive=True, validation_split=0.2 ):
+def get_train_validation_generator(csv_path,img_path ,batch_size=8, dim=(256,256), n_channels=3, shuffle=True ,preprocess = None , only_positive=True, validation_split=0.2,augmentation=False,normalize=False,hist_eq =False ):
 
   df = pd.read_csv(csv_path)
   if only_positive:
@@ -140,11 +190,15 @@ def get_train_validation_generator(csv_path,img_path ,batch_size=8, dim=(256,256
   patient_ids_train = patient_ids[int(len(patient_ids)*validation_split ):]
   patient_ids_validation = patient_ids[: int(len(patient_ids)*validation_split)]
 
+  if augmentation == True:
+        augmentation='train'
   train_gen = Seg_gen(csv_path,patient_ids_train , img_path ,batch_size=batch_size, dim=dim, n_channels=n_channels,
-                         shuffle=shuffle, preprocess_fct = preprocess)
+                         shuffle=shuffle, preprocess_fct = preprocess,augmentation=augmentation, normalize=normalize,hist_eq=hist_eq)
 
+  if augmentation == True:
+        augmentation='validation'
   validation_gen = Seg_gen(csv_path, patient_ids_validation, img_path, batch_size=batch_size, dim=dim, n_channels=n_channels,
-                       shuffle=shuffle,  preprocess_fct=preprocess)
+                       shuffle=shuffle,  preprocess_fct=preprocess,augmentation=augmentation, normalize=normalize,hist_eq=hist_eq)
 
 
   return train_gen, validation_gen
