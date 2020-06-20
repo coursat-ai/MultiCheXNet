@@ -49,7 +49,7 @@ class MTL_generatot(tensorflow.keras.utils.Sequence):
         else:
             X, Y_det = next(iter(self.det_generator))
             Y_class= []
-            for yy in Y_seg:
+            for yy in Y_det:
                 if np.sum(yy)==0:
                     Y_class.append([1,0,0])
                 else:
