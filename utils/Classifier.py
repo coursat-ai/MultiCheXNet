@@ -1,10 +1,7 @@
 from .ModelBlock import ModelBlock
 
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Flatten
-from tensorflow.keras.layers import Input
-from tensorflow.keras.layers import Dense
-
+from tensorflow.keras.models import Sequential ,Flatten,Input,Dense GlobalAveragePooling1D , Dropout
+from tensorflow.keras.regularizers import l2
 
 class Classifier(ModelBlock):
     def __init__(self, encoder):
@@ -19,7 +16,10 @@ class Classifier(ModelBlock):
             keras model:
         """
 
-        X = Flatten()(self.encoder_output)
+        X = GlobalAveragePooling1D()(self.encoder_output)
+        X = Dropout(0.2)(X)
+        X = Dense(256, activation='softmax' , activity_regularizer=l2(0.01))(X)
+        X = Dropout(0.2)(X)
         X = Dense(3, activation='softmax')(X)
 
         return X
