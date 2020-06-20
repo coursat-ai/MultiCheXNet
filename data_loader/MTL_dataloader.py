@@ -35,14 +35,25 @@ class MTL_generatot(tensorflow.keras.utils.Sequence):
 
         if self.batch_number % 2 == 0:
             X, Y_seg = next(iter(self.seg_generator))
-            Y_class = [[0, 1, 0]] * self.batch_size
+            Y_class= []
+            for yy in Y_seg:
+                if np.sum(yy)==0:
+                    Y_class.append([1,0,0])
+                else:
+                    Y_class.append([0, 1, 0])
+                    
             Y_class = np.array(Y_class)
             Y_seg= np.array(Y_seg)
             Y_det = np.ones([self.batch_size,8,8,5,6])*-1
 
         else:
             X, Y_det = next(iter(self.det_generator))
-            Y_class = [[0, 0, 1]] * self.batch_size
+            Y_class= []
+            for yy in Y_seg:
+                if np.sum(yy)==0:
+                    Y_class.append([1,0,0])
+                else:
+                    Y_class.append([0, 0, 1])
             Y_class = np.array(Y_class)
             Y_det= np.array(Y_det)
             Y_seg = np.ones([self.batch_size,256,256,1])*-1
