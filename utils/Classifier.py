@@ -1,6 +1,6 @@
 from .ModelBlock import ModelBlock
 
-from tensorflow.keras.models import Sequential ,Flatten,Input,Dense, GlobalAveragePooling1D , Dropout
+from tensorflow.keras.layers import Flatten,Input,Dense, GlobalAveragePooling1D , Dropout
 from tensorflow.keras.regularizers import l2
 
 class Classifier(ModelBlock):
