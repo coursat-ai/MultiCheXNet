@@ -17,7 +17,7 @@ class Classifier(ModelBlock):
 
         X = GlobalAveragePooling2D()(self.encoder_output)
         X = Dropout(0.2)(X)
-        X = Dense(256, activation='softmax' , activity_regularizer=l2(0.01))(X)
+        X = Dense(256, activation='relu' , activity_regularizer=l2(0.01))(X)
         X = Dropout(0.2)(X)
         X = Dense(3, activation='softmax')(X)
 
