@@ -36,9 +36,10 @@ class Segmenter(ModelBlock):
             Output tensor for the block.
         """
         bn_axis = 3
+        x1 = Dropout(0.2)(x)
         x1 = BatchNormalization(axis=bn_axis,
                                        epsilon=1.001e-5,
-                                       name=name + '_0_bn')(x)
+                                       name=name + '_0_bn')(x1)
         x1 = Activation('relu', name=name + '_0_relu')(x1)
         x1 = Conv2D(4 * growth_rate, 1,
                            use_bias=False,
