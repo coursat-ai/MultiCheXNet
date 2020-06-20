@@ -36,7 +36,7 @@ class Segmenter(ModelBlock):
             Output tensor for the block.
         """
         bn_axis = 3
-        x1 = Dropout(0.2)(x)
+        x1 = Dropout(0.2 name=name + '_0_drop')(x)
         x1 = BatchNormalization(axis=bn_axis,
                                        epsilon=1.001e-5,
                                        name=name + '_0_bn')(x1)
