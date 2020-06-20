@@ -55,6 +55,9 @@ def processGroundTruth(bb, labels, priors, network_output_shape):
     the anchor priors and the yolo model's output shape
     build the y_true vector to be used in yolov2 loss calculation
     """
+    if bb.shape == (0,):
+        return np.zeros(network_output_shape)
+    
     bb = bbToYoloFormat(bb) / 32
     best_anchor_indices = findBestPrior(bb, priors)
     responsible_grid_coords = np.floor(bb).astype(np.uint32)[:, :2]
@@ -113,17 +116,21 @@ class det_gen(tensorflow.keras.utils.Sequence):
             
             y_boxes = []
             labels = []
-            for i, row in filtered_df.iterrows():
-                xmin = int(row['x'])
-                ymin = int(row['y'])
-                xmax = int(xmin + row['width'])
-                ymax = int(ymin + row['height'])
-                xmin = int((xmin/1024)*self.dim[0])
-                xmax = int((xmax/1024)*self.dim[0])
-                ymin = int((ymin/1024)*self.dim[1])
-                ymax = int((ymax/1024)*self.dim[1])
-                y_boxes.append([xmin,ymin,xmax,ymax])
-                labels.append([1])
+            if filtered_df["Target"].iloc[0] != 1:
+                y_boxes= np.array([])
+                labels = np.array([])
+            else:
+                for i, row in filtered_df.iterrows():
+                    xmin = int(row['x'])
+                    ymin = int(row['y'])
+                    xmax = int(xmin + row['width'])
+                    ymax = int(ymin + row['height'])
+                    xmin = int((xmin/1024)*self.dim[0])
+                    xmax = int((xmax/1024)*self.dim[0])
+                    ymin = int((ymin/1024)*self.dim[1])
+                    ymax = int((ymax/1024)*self.dim[1])
+                    y_boxes.append([xmin,ymin,xmax,ymax])
+                    labels.append([1])
             #run preprocess_bboxes
             #y[index] = processGroundTruth(np.array(y_boxes),np.array(labels), self.TINY_YOLOV2_ANCHOR_PRIORS , self.network_output_shape)
             if self.augmentation=='train':
@@ -164,7 +171,7 @@ def get_train_validation_generator(csv_path,img_path ,batch_size=8, dim=(256,256
   if only_positive:
     df = df[df["Target"] == 1]
 
-  random.seed(42)
+  random.seed(41)
   patient_ids = df["patientId"].unique()
   random.shuffle(patient_ids)
 
