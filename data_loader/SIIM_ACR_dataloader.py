@@ -128,7 +128,10 @@ class Seg_gen(tensorflow.keras.utils.Sequence):
             filtered_dataframe = self.df[self.df["ImageId"]==ID]
             
             img = pydicom.dcmread(filtered_dataframe['full_path'].iloc[0]).pixel_array
-            mask = masks_as_image(filtered_dataframe[' EncodedPixels'], (1024,1024))
+            if filtered_dataframe[" EncodedPixels"].iloc[0]==' -1':
+                mask= np.zeros(self.dim)
+            else:
+                mask = masks_as_image(filtered_dataframe[' EncodedPixels'], (1024,1024))
             
             
             if self.n_channels == 3:
