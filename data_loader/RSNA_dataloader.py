@@ -105,9 +105,6 @@ class det_gen(tensorflow.keras.utils.Sequence):
         
         indicies = range(index*self.batch_size, min((index*self.batch_size)+self.batch_size ,len(self.patient_ids) ))
         patientIds = self.patient_ids[indicies]
-        print(index)
-        print(indicies)
-        print(patientIds)
         
         X =[]# np.zeros((self.batch_size, self.dim[0], self.dim[1],self.n_channels))
         y_boxes = []
