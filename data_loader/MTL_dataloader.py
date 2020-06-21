@@ -38,6 +38,7 @@ class MTL_generatot(tensorflow.keras.utils.Sequence):
 
         if self.batch_number % 2 == 0:
             try:
+                print("HEREEEEEEEEEEEEEE SEGG")
                 X, Y_seg = next(self.seg_itterator)
             except:
                 print('seg_finished')
@@ -57,6 +58,7 @@ class MTL_generatot(tensorflow.keras.utils.Sequence):
 
         else:
             try:
+                print("HEREEEEEEEEEEEEEE DETTTT")
                 X, Y_det = next(self.det_itterator)
             except:
                 print('det_finished')
