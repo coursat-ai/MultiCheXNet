@@ -13,6 +13,10 @@ class MTL_generatot(tensorflow.keras.utils.Sequence):
 
         self.seg_generator = Segmentation_gen
         self.det_generator = detection_gen
+        
+        self.seg_itterator = self.seg_generator.__iter__()
+        self.det_generator = self.det_generator.__iter__()
+        
         self.nb_iteration = nb_iteration
         self.batch_size = batch_size
         self.batch_number = 0
@@ -20,13 +24,12 @@ class MTL_generatot(tensorflow.keras.utils.Sequence):
     def __len__(self):
         'Denotes the number of batches per epoch'
         return self.nb_iteration
-
+        
     def __getitem__(self, index):
         'Generate one batch of data'
         # Generate indexes of the batch
         # Generate data
         X, y = self.__data_generation(index)
-
         return X, y
 
     def __data_generation(self, index):
@@ -34,7 +37,12 @@ class MTL_generatot(tensorflow.keras.utils.Sequence):
         # Initialization
 
         if self.batch_number % 2 == 0:
-            X, Y_seg = next(iter(self.seg_generator))
+            try:
+                X, Y_seg = next(self.seg_itterator)
+            except:
+                self.seg_itterator = self.seg_generator.__iter__()
+                X, Y_det = next(self.seg_itterator)
+                
             Y_class= []
             for yy in Y_seg:
                 if np.sum(yy)==0:
@@ -47,7 +55,12 @@ class MTL_generatot(tensorflow.keras.utils.Sequence):
             Y_det = np.ones([self.batch_size,8,8,5,6])*-1
 
         else:
-            X, Y_det = next(iter(self.det_generator))
+            try:
+                X, Y_det = next(self.det_generator)
+            except:
+                self.det_generator = self.det_generator.__iter__()
+                X, Y_det = next(self.det_generator)
+                
             Y_class= []
             for yy in Y_det:
                 if np.sum(yy)==0:
