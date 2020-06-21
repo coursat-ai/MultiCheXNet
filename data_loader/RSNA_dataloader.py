@@ -102,8 +102,13 @@ class det_gen(tensorflow.keras.utils.Sequence):
 
     def __getitem__(self, index):
         'Generate one batch of data'
+        
         indicies = range(index*self.batch_size, min((index*self.batch_size)+self.batch_size ,len(self.patient_ids) ))
         patientIds = self.patient_ids[indicies]
+        print(index)
+        print(indicies)
+        print(patientIds)
+        
         X =[]# np.zeros((self.batch_size, self.dim[0], self.dim[1],self.n_channels))
         y_boxes = []
         #y = np.zeros((self.batch_size,self.network_output_shape[0],self.network_output_shape[1],self.network_output_shape[2],self.network_output_shape[3]))
