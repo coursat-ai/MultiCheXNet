@@ -10,6 +10,8 @@ class MTL_generatot(tensorflow.keras.utils.Sequence):
 
     def __init__(self, Segmentation_gen, detection_gen , nb_iteration,batch_size):
         'Initialization'
+        
+        print("INITTT")
 
         self.seg_generator = Segmentation_gen
         self.det_generator = detection_gen
@@ -35,6 +37,7 @@ class MTL_generatot(tensorflow.keras.utils.Sequence):
     def __data_generation(self, index):
         'Generates data containing batch_size samples'  # X : (n_samples, *dim, n_channels)
         # Initialization
+        print("IN CALLLLLLLLLL")
 
         if self.batch_number % 2 == 0:
             try:
