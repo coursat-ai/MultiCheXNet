@@ -15,7 +15,7 @@ class MTL_generatot(tensorflow.keras.utils.Sequence):
         self.det_generator = detection_gen
         
         self.seg_itterator = self.seg_generator.__iter__()
-        self.det_generator = self.det_generator.__iter__()
+        self.det_itterator = self.det_generator.__iter__()
         
         self.nb_iteration = nb_iteration
         self.batch_size = batch_size
@@ -40,6 +40,7 @@ class MTL_generatot(tensorflow.keras.utils.Sequence):
             try:
                 X, Y_seg = next(self.seg_itterator)
             except:
+                print('seg_finished')
                 self.seg_itterator = self.seg_generator.__iter__()
                 X, Y_det = next(self.seg_itterator)
                 
@@ -56,10 +57,11 @@ class MTL_generatot(tensorflow.keras.utils.Sequence):
 
         else:
             try:
-                X, Y_det = next(self.det_generator)
+                X, Y_det = next(self.det_itterator)
             except:
-                self.det_generator = self.det_generator.__iter__()
-                X, Y_det = next(self.det_generator)
+                print('det_finished')
+                self.det_itterator = self.det_generator.__iter__()
+                X, Y_det = next(self.det_itterator)
                 
             Y_class= []
             for yy in Y_det:
