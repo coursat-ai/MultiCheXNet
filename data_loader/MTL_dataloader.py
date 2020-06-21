@@ -41,7 +41,7 @@ class MTL_generatot(tensorflow.keras.utils.Sequence):
                 X, Y_seg = next(self.seg_itterator)
             except:
                 self.seg_itterator = self.seg_generator.__iter__()
-                X, Y_det = next(self.seg_itterator)
+                X, Y_seg = next(self.seg_itterator)
                 
             Y_class= []
             for yy in Y_seg:
