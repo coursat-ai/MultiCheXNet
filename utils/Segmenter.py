@@ -88,7 +88,7 @@ class Segmenter(ModelBlock):
     def loss(self,y_true,y_pred):
         if tf.math.reduce_all(tf.math.equal(y_true,-1)):
             return  tf.convert_to_tensor(0, dtype=tf.float32)
-        return self.focal_loss(y_true, y_pred)
+        return dice_loss(y_true, y_pred)
 
 
 def binary_focal_loss(gamma=2., alpha=.25):
