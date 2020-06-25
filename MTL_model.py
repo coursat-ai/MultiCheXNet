@@ -33,9 +33,9 @@ class MTL_model():
             detector_loss = self.detector.loss
 
         if segmenter_loss!=None:
-            segmenter_loss= self.segmenter.loss
+            segmenter_loss = segmenter_loss
         else:
-            segmenter_loss=segmenter_loss
+            segmenter_loss = self.segmenter.loss
 
         mtl_loss = MTL_loss(classification_loss, detector_loss, segmenter_loss)
 
