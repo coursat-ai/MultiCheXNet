@@ -78,7 +78,7 @@ class Detector(ModelBlock):
 
         self.encoder_output = encoder.model.output
 
-        self.TINY_YOLOV2_ANCHOR_PRIORS = np.array([
+        self.anchors = np.array([
             1.08, 1.19, 3.42, 4.41, 6.63, 11.38, 9.42, 5.11, 16.62, 10.52
         ]).reshape(5, 2)
 
@@ -86,7 +86,7 @@ class Detector(ModelBlock):
 
         self.image_size = image_size
         self.n_cells = self.image_size // 32
-        self.B = self.TINY_YOLOV2_ANCHOR_PRIORS.shape[0]
+        self.B = self.anchors.shape[0]
         self.n_classes = n_classes
 
         self.model = self.make_model()
@@ -104,7 +104,7 @@ class Detector(ModelBlock):
 
         model = conv_batch_lrelu(self.encoder_output, 1024, 3)
 
-        n_outputs = len(self.TINY_YOLOV2_ANCHOR_PRIORS) * (5 + self.n_classes)
+        n_outputs = len(self.anchors) * (5 + self.n_classes)
         model = Conv2D(n_outputs, (1, 1), padding='same', activation='linear')(model)
 
         model_out = Reshape(
@@ -124,7 +124,7 @@ class Detector(ModelBlock):
         y_true = tf.reshape(y_true, tf.shape(y_pred), name='y_true')
         y_pred = tf.identity(y_pred, name='y_pred')
         
-        TINY_YOLOV2_ANCHOR_PRIORS = tf.convert_to_tensor(self.TINY_YOLOV2_ANCHOR_PRIORS, dtype= tf.float32)
+        TINY_YOLOV2_ANCHOR_PRIORS = tf.convert_to_tensor(self.anchors, dtype= tf.float32)
         
         #### PROCESS PREDICTIONS ####
         # get x-y coords (for now they are with respect to cell)
