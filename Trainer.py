@@ -3,7 +3,7 @@ class CustomCallBacks():
     How to Use:
     monitor = CustomeCallBacksObject.calls('DetectionModel.h5',
                   checkpointMonitor = 'val_loss',
-                  checkpointMode = 'auto',
+                  checkpointMode = 'min',
                   earlyStopMonitor = 'val_loss',
                   earlyStopPatience = 10,
                   earlyStopMode = 'auto',
@@ -16,7 +16,7 @@ class CustomCallBacks():
     def calls(self,
               model_name, 
               checkpointMonitor = 'val_loss',
-              checkpointMode = 'auto',
+              checkpointMode = 'min',
               earlyStopMonitor = 'val_loss',
               earlyStopPatience = 10,
               earlyStopMode = 'auto',
