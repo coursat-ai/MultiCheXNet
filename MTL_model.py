@@ -14,14 +14,19 @@ class MTL_model():
         self.add_class_head=add_class_head
         self.add_detector_head=add_detector_head
         self.add_segmenter_head=add_segmenter_head
-
+        
+        heads = []
         if self.add_class_head:
             self.classifier = Classifier(self.encoder)
+            heads.append(self.classifier)
         if self.add_detector_head:
             self.detector = Detector(self.encoder, img_size, n_classes)
+            heads.append(self.detector)
         if self.add_segmenter_head:
             self.segmenter = Segmenter(self.encoder)
-        self.MTL_model = ModelBlock.add_heads(self.encoder, [self.classifier, self.detector, self.segmenter])
+            heads.append(self.segmenter)
+            
+        self.MTL_model = ModelBlock.add_heads(self.encoder, heads)
 
 
     def get_MTL_loss(self,classification_loss=None,detector_loss=None,segmenter_loss=None):
