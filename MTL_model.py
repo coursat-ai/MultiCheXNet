@@ -44,7 +44,7 @@ class MTL_model():
                 detector_loss= detector_loss
             else:
                 detector_loss = self.detector.loss
-            combined_losses.append.append(detector_loss)
+            combined_losses.append(detector_loss)
 
         if self.add_segmenter_head:
             if segmenter_loss!=None:
