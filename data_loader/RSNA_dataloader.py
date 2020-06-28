@@ -118,6 +118,7 @@ class det_gen(tensorflow.keras.utils.Sequence):
             
             y_boxes = []
             labels = []
+            y_ = []
             if filtered_df["Target"].iloc[0] != 1:
                 y_boxes= np.array([])
                 labels = np.array([])
