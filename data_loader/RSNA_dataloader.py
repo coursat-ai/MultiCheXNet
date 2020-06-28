@@ -136,8 +136,27 @@ class det_gen(tensorflow.keras.utils.Sequence):
             #run preprocess_bboxes
             #y[index] = processGroundTruth(np.array(y_boxes),np.array(labels), self.TINY_YOLOV2_ANCHOR_PRIORS , self.network_output_shape)
             if self.augmentation=='train':
-                aug= AUGMENTATIONS_TRAIN(image=img,bboxes=y_boxes)
-                img=aug['image']
+                # aug= AUGMENTATIONS_TRAIN(image=img,bboxes=y_boxes)
+                # img=aug['image']
+                seq = iaa.Sequential([iaa.Affine(translate_percent={"x": (0.01,0.1)},scale=(0.5,1)),
+                                                                                    # iaa.Affine(rotate=(-25, 25)),
+                                                                                    iaa.Crop(percent=(0, 0.2)),
+                                                                                    iaa.Fliplr(0.2),
+                                                                                    iaa.Flipud(0.2)])
+                                                                                    #  ,random_order=True)
+
+                ia_bbs = [ia.BoundingBox(x1=b[0], y1=b[1],x2=b[2], y2=b[3]) for b in y_boxes]
+                ia_boxes=ia.BoundingBoxesOnImage(ia_bbs, shape=(256,256))
+                image_aug, bbs_aug = seq(image=img, bounding_boxes=ia_boxes)
+
+                for i in range(len(bbs_aug.bounding_boxes)):
+                    bb = bbs_aug.bounding_boxes[i]
+                    annot=[int(bb.x1),int(bb.y1),int(bb.x2),int(bb.y2)]
+                    y_.append(np.clip(annot, 0, self.dim[0] - 1))
+
+                img = image_aug
+                # y[index] = processGroundTruth(np.array(y_),np.array(labels), self.TINY_YOLOV2_ANCHOR_PRIORS , self.network_output_shape)
+                y_boxes = y_
 
             if self.hist_eq:
                 img= exposure.equalize_adapthist(img)
