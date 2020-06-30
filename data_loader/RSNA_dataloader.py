@@ -132,7 +132,6 @@ class det_gen(tensorflow.keras.utils.Sequence):
             patientIds+= negative_ids[:num_negative]
             
             random.shuffle(patientIds)
-            print(len(patientIds))
         
         X =[]# np.zeros((self.batch_size, self.dim[0], self.dim[1],self.n_channels))
         y_boxes = []
