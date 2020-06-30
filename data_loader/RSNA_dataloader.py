@@ -79,7 +79,7 @@ def processGroundTruth(bb, labels, priors, network_output_shape):
 class det_gen(tensorflow.keras.utils.Sequence):
     'Generates data from a Dataframe'
     def __init__(self,csv_file,patientId , img_path ,batch_size=8, dim=(256,256), n_channels=3,
-                  shuffle=True, preprocess = None, augmentation=False,normalize=False,hist_eq =False ):
+                  shuffle=True, preprocess = None, augmentation=False,normalize=False,hist_eq =False,batch_positive_portion=None,split_type='train' ):
 
         self.df = csv_file
         self.shuffle = shuffle
@@ -93,6 +93,10 @@ class det_gen(tensorflow.keras.utils.Sequence):
         self.hist_eq=hist_eq
         self.n_channels= n_channels
         self.preprocess =preprocess
+        
+        self.batch_positive_portion=batch_positive_portion
+        self.split_type=split_type
+        
         self.TINY_YOLOV2_ANCHOR_PRIORS = np.array([1.08, 1.19, 3.42, 4.41, 6.63, 11.38, 9.42, 5.11, 16.62, 10.52]).reshape(5, 2)
         self.network_output_shape = (8,8,5,6)
 
@@ -107,9 +111,28 @@ class det_gen(tensorflow.keras.utils.Sequence):
 
     def __getitem__(self, index):
         'Generate one batch of data'
-        
-        indicies = range(index*self.batch_size, min((index*self.batch_size)+self.batch_size ,len(self.patient_ids) ))
-        patientIds = self.patient_ids[indicies]
+        if self.batch_positive_portion==None or self.split_type!='train':
+            indicies = range(index*self.batch_size, min((index*self.batch_size)+self.batch_size ,len(self.patient_ids) ))
+            patientIds = self.patient_ids[indicies]
+        else:
+            filtered_df = self.df[self.df["patientId"].isin(self.patient_ids)]
+            filtered_df_positive =  filtered_df[filtered_df["Target"]==1]
+            filtered_df_negative =  filtered_df[filtered_df["Target"]!=1]
+            
+            positive_ids= filtered_df_positive['patientId'].tolist()
+            negative_ids= filtered_df_negative['patientId'].tolist()
+            
+            random.shuffle(positive_ids)
+            random.shuffle(negative_ids)
+            
+            num_positive = int((self.batch_size)*self.batch_positive_portion)
+            num_negative = self.batch_size - num_positive
+            
+            patientIds= positive_ids[:num_positive]
+            patientIds+= negative_ids[:num_negative]
+            
+            random.shuffle(patientIds)
+            print(len(patientIds))
         
         X =[]# np.zeros((self.batch_size, self.dim[0], self.dim[1],self.n_channels))
         y_boxes = []
@@ -161,7 +184,6 @@ class det_gen(tensorflow.keras.utils.Sequence):
                     y_.append(np.clip(annot, 0, self.dim[0] - 1))
 
                 img = image_aug
-                # y[index] = processGroundTruth(np.array(y_),np.array(labels), self.TINY_YOLOV2_ANCHOR_PRIORS , self.network_output_shape)
                 y_boxes = y_
 
             if self.hist_eq:
@@ -191,7 +213,7 @@ class det_gen(tensorflow.keras.utils.Sequence):
 
 
 def get_train_validation_generator(csv_path,img_path ,batch_size=8, dim=(256,256), n_channels=3,
-                  shuffle=True ,preprocess = None , only_positive=True, validation_split=0.2,augmentation=False,normalize=False,hist_eq =False  ):
+                  shuffle=True ,preprocess = None , only_positive=True, validation_split=0.2,augmentation=False,normalize=False,hist_eq =False,batch_positive_portion=None  ):
 
 
   df = pd.read_csv(csv_path)
@@ -208,11 +230,11 @@ def get_train_validation_generator(csv_path,img_path ,batch_size=8, dim=(256,256
   if augmentation == True:
         augmentation='train'
   train_gen = det_gen(df,patient_ids_train , img_path ,batch_size=batch_size, dim=dim, n_channels=n_channels,
-                shuffle=shuffle, preprocess = preprocess,augmentation=augmentation,normalize=normalize,hist_eq =hist_eq )
+                shuffle=shuffle, preprocess = preprocess,augmentation=augmentation,normalize=normalize,hist_eq =hist_eq,batch_positive_portion=batch_positive_portion,split_type='train' )
   
   if augmentation == 'train':
     augmentation='validation'
   validation_gen = det_gen(df, patient_ids_validation, img_path, batch_size=batch_size, dim=dim, n_channels=n_channels,
-                       shuffle=shuffle, preprocess=preprocess,augmentation=augmentation,normalize=normalize,hist_eq =hist_eq)
+                       shuffle=shuffle, preprocess=preprocess,augmentation=augmentation,normalize=normalize,hist_eq =hist_eq,batch_positive_portion=batch_positive_portion,split_type='validation')
 
   return train_gen, validation_gen
