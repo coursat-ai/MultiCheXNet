@@ -1,13 +1,17 @@
 import os
-import numpy as np
-import pandas as pd
-from glob import glob
 import pydicom
-import tensorflow
-from skimage.transform import resize
-import random
-import cv2
 from skimage import exposure
+import numpy as np
+import tensorflow
+import random
+import pandas as pd
+import cv2
+
+import imageio
+import imgaug as ia
+from imgaug import augmenters as iaa
+from imgaug.augmentables.bbs import BoundingBox, BoundingBoxesOnImage
+
 from albumentations import (
     Compose, HorizontalFlip, CLAHE, HueSaturationValue,
     RandomBrightness, RandomContrast, RandomGamma,OneOf,
@@ -17,119 +21,106 @@ from albumentations import (
 
 h,w = 256,256
 AUGMENTATIONS_TRAIN = Compose([
-    HorizontalFlip(p=0.5),
+    #HorizontalFlip(p=0.5),
     OneOf([
-        
         RandomGamma(),
         RandomBrightness(),
-         ], p=0.3),
-    OneOf([
-        ElasticTransform(alpha=120, sigma=120 * 0.05, alpha_affine=120 * 0.03),
-        GridDistortion(),
-        OpticalDistortion(distort_limit=2, shift_limit=0.5),
-        ], p=0.3),
-    Rotate(limit=15, p=0.2),
-    RandomSizedCrop(min_max_height=(176, 256), height=h, width=w,p=0.25)],p=1)
+         ], p=0.3)
+    ],p=1)
 
 
-def add_full_path(df, train_path):
-    my_glob = glob(train_path + '/*/*/*.dcm')
-
-    full_img_paths = {os.path.basename(x).split('.dcm')[0]: x for x in my_glob}
-    dataset_path = df['ImageId'].map(full_img_paths.get)
-
-    df['full_path'] = dataset_path
-
-    return df
-
-
-def rle2mask(rle, width, height):
-    if rle == ' -1':
-        rle = '0 0'
-
-    mask = np.zeros(width * height)
-    array = np.asarray([int(x) for x in rle.split()])
-    starts = array[0::2]
-    lengths = array[1::2]
-
-    current_position = 0
-    for index, start in enumerate(starts):
-        current_position += start
-        mask[current_position:current_position + lengths[index]] = 255
-        current_position += lengths[index]
-
-    return mask.reshape(width, height)
-
-def masks_as_image(rle_list, shape):
-    # Take the individual masks and create a single mask array
-    all_masks = np.zeros(shape, dtype=np.uint8)
-    for mask in rle_list:
-        if isinstance(mask, str) and mask != '-1':
-            all_masks |= rle2mask(mask, shape[0], shape[1]).T.astype(bool)
-    return all_masks
-
-
-class Seg_gen(tensorflow.keras.utils.Sequence):
-    'Generates data from a Dataframe'
-
-    def __init__(self, df_path,patient_ids, train_path, preprocess_fct=None, batch_size=32, dim=(256, 256), shuffle=True , n_channels=3,augmentation=None,normalize=False,hist_eq=False,batch_positive_portion=None,split_type='train'):
-        'Initialization'
-        
-        rle_csv = pd.read_csv(df_path)
+def bbToYoloFormat(bb):
+    """
+    converts (left, top, right, bottom) to
+    (center_x, center_y, center_w, center_h)
+    """
+    x1, y1, x2, y2 = np.split(bb, 4, axis=1) 
+    w = x2 - x1
+    h = y2 - y1
+    c_x = x1 + w / 2
+    c_y = y1 + h / 2
+    return np.concatenate([c_x, c_y, w, h], axis=-1)
+def findBestPrior(bb, priors):
+    """
+    Given bounding boxes in yolo format and anchor priors
+    compute the best anchor prior for each bounding box
+    """
+    w1, h1 = bb[:, 2], bb[:, 3]
+    w2, h2 = priors[:, 0], priors[:, 1]
+    # overlap, assumes top left corner of both at (0, 0)
+    horizontal_overlap = np.minimum(w1[:, None], w2)
+    vertical_overlap = np.minimum(h1[:, None], h2)
+    intersection = horizontal_overlap * vertical_overlap
+    union = (w1 * h1)[:, None] + (w2 * h2) - intersection
+    iou = intersection / union
+    return np.argmax(iou, axis=1)
+def processGroundTruth(bb, labels, priors, network_output_shape):
+    """
+    Given bounding boxes in normal x1,y1,x2,y2 format, the relevant labels in one-hot form,
+    the anchor priors and the yolo model's output shape
+    build the y_true vector to be used in yolov2 loss calculation
+    """
+    if bb.shape == (0,):
+        return np.zeros(network_output_shape)
     
-        self.df = add_full_path(rle_csv, train_path)
-        
-        self.patient_ids = patient_ids
-        
-        self.preprocess_fct = preprocess_fct
-        self.dim = dim
-        self.batch_size = batch_size
-        self.shuffle = shuffle
-        
-        self.normalize = normalize
-        self.augmentation= augmentation
-        self.hist_eq = hist_eq
-        
-        self.split_type=split_type
+    bb = bbToYoloFormat(bb) / 32
+    best_anchor_indices = findBestPrior(bb, priors)
+    responsible_grid_coords = np.floor(bb).astype(np.uint32)[:, :2]
+    values = np.concatenate((
+        bb, np.ones((len(bb), 1)), labels
+    ), axis=1)
+    x, y = np.split(responsible_grid_coords, 2, axis=1)
+    y = y.ravel()
+    x = x.ravel()
+    y_true = np.zeros(network_output_shape)    
+    y_true[y, x, best_anchor_indices] = values
+    return y_true
 
-        self.n = len(self.patient_ids)
-        self.nb_iteration = int(np.floor(self.n / self.batch_size))
+class det_gen(tensorflow.keras.utils.Sequence):
+    'Generates data from a Dataframe'
+    def __init__(self,csv_file,patientId , img_path ,batch_size=8, dim=(256,256), n_channels=3,
+                  shuffle=True, preprocess = None, augmentation=False,normalize=False,hist_eq =False,batch_positive_portion=None,split_type='train' ):
+
+        self.df = csv_file
+        self.shuffle = shuffle
+        self.img_path = img_path
+        self.patient_ids = patientId
+        self.batch_size = batch_size
+        self.nb_iteration = int(len(self.patient_ids)/self.batch_size)
+        self.dim = dim
+        self.augmentation=augmentation
+        self.normalize=normalize
+        self.hist_eq=hist_eq
+        self.n_channels= n_channels
+        self.preprocess =preprocess
         
-        self.n_channels = n_channels
-        self.batch_positive_portion= batch_positive_portion
+        self.batch_positive_portion=batch_positive_portion
+        self.split_type=split_type
         
+        self.TINY_YOLOV2_ANCHOR_PRIORS = np.array([1.08, 1.19, 3.42, 4.41, 6.63, 11.38, 9.42, 5.11, 16.62, 10.52]).reshape(5, 2)
+        self.network_output_shape = (8,8,5,6)
 
     def __len__(self):
         'Denotes the number of batches per epoch'
         return self.nb_iteration
 
-    def __getitem__(self, index):
-        'Generate one batch of data'
-        # Generate indexes of the batch        
-        
-        # Generate data
-        X, y = self.__data_generation(index)
-
-        return X, y
-
     def on_epoch_end(self):
         'Updates indexes after each epoch'
-        random.shuffle(self.patient_ids)
+        if self.shuffle == True:
+            random.shuffle(self.patient_ids)
 
-    def __data_generation(self, index):
-        'Generates data containing batch_size samples'  # X : (n_samples, *dim, n_channels)
-        # Initialization
-        
+    def __getitem__(self, index):
+        'Generate one batch of data'
         if self.batch_positive_portion==None or self.split_type!='train':
-            indexes = range(index*self.batch_size, min((index*self.batch_size)+self.batch_size ,len(self.patient_ids) ))
-            patient_ids= self.patient_ids[indexes]
-        else: 
-            filtered_df = self.df[self.df["ImageId"].isin(self.patient_ids)]
-            filtered_df_positive =  filtered_df[filtered_df[" EncodedPixels"]!=' -1']
-            filtered_df_negative =  filtered_df[filtered_df[" EncodedPixels"]==' -1']
+            indicies = range(index*self.batch_size, min((index*self.batch_size)+self.batch_size ,len(self.patient_ids) ))
+            patientIds = self.patient_ids[indicies]
+        else:
+            filtered_df = self.df[self.df["patientId"].isin(self.patient_ids)]
+            filtered_df_positive =  filtered_df[filtered_df["Target"]==1]
+            filtered_df_negative =  filtered_df[filtered_df["Target"]!=1]
             
-            positive_ids= filtered_df_positive['ImageId'].tolist()
-            negative_ids= filtered_df_negative['ImageId'].tolist()
+            positive_ids= filtered_df_positive['patientId'].tolist()
+            negative_ids= filtered_df_negative['patientId'].tolist()
             
             random.shuffle(positive_ids)
             random.shuffle(negative_ids)
@@ -137,76 +128,100 @@ class Seg_gen(tensorflow.keras.utils.Sequence):
             num_positive = int((self.batch_size)*self.batch_positive_portion)
             num_negative = self.batch_size - num_positive
             
-            patient_ids= positive_ids[:num_positive]
-            patient_ids+= negative_ids[:num_negative]
+            patientIds= positive_ids[:num_positive]
+            patientIds+= negative_ids[:num_negative]
             
-            random.shuffle(patient_ids)
-            
-            
-            
-
-        X = []#np.empty((self.batch_size, self.dim[0],self.dim[1],self.n_channels))
-        Y = []#np.empty((self.batch_size,  self.dim[0],self.dim[1]))
+            random.shuffle(patientIds)
+            print(len(patientIds))
         
-        
-        # Generate data
-        for i, ID in enumerate(patient_ids):
-            # Read the image
-            filtered_dataframe = self.df[self.df["ImageId"]==ID]
+        X =[]# np.zeros((self.batch_size, self.dim[0], self.dim[1],self.n_channels))
+        y_boxes = []
+        #y = np.zeros((self.batch_size,self.network_output_shape[0],self.network_output_shape[1],self.network_output_shape[2],self.network_output_shape[3]))
+        y=[]
+        output_labels = []
+        for index , patientId in enumerate(patientIds):
+            filtered_df = self.df[self.df["patientId"] == patientId]
+            img_path = os.path.join(self.img_path,patientId+".dcm" )
+            img = self.load_img(img_path)
             
-            img = pydicom.dcmread(filtered_dataframe['full_path'].iloc[0]).pixel_array
-            if filtered_dataframe[" EncodedPixels"].iloc[0]==' -1':
-                mask= np.zeros(self.dim)
+            y_boxes = []
+            labels = []
+            y_ = []
+            if filtered_df["Target"].iloc[0] != 1:
+                y_boxes= np.array([])
+                labels = np.array([])
             else:
-                mask = masks_as_image(filtered_dataframe[' EncodedPixels'], (1024,1024))
-            
-            
-            if self.n_channels == 3:
-                img = cv2.cvtColor(np.array(img, dtype=np.uint8), cv2.COLOR_GRAY2RGB)
-            
-            img = np.asarray(cv2.resize(img, self.dim))
-
-            if self.preprocess_fct !=None:
-                img= self.preprocess_fct(img)
-            
-            mask = resize(mask,
-                          self.dim,
-                          mode='edge',
-                          anti_aliasing=False,
-                          anti_aliasing_sigma=None,
-                          preserve_range=True,
-                          order=0)
-            
-            
+                for i, row in filtered_df.iterrows():
+                    xmin = int(row['x'])
+                    ymin = int(row['y'])
+                    xmax = int(xmin + row['width'])
+                    ymax = int(ymin + row['height'])
+                    xmin = int((xmin/1024)*self.dim[0])
+                    xmax = int((xmax/1024)*self.dim[0])
+                    ymin = int((ymin/1024)*self.dim[1])
+                    ymax = int((ymax/1024)*self.dim[1])
+                    y_boxes.append([xmin,ymin,xmax,ymax])
+                    labels.append([1])
+            #run preprocess_bboxes
+            #y[index] = processGroundTruth(np.array(y_boxes),np.array(labels), self.TINY_YOLOV2_ANCHOR_PRIORS , self.network_output_shape)
             if self.augmentation=='train':
-                aug= AUGMENTATIONS_TRAIN(image=img,mask=mask)
-                img=aug['image']
-                mask=aug['mask']
-            
-            
+                # aug= AUGMENTATIONS_TRAIN(image=img,bboxes=y_boxes)
+                # img=aug['image']
+                seq = iaa.Sequential([iaa.Affine(translate_percent={"x": (0.01,0.1)},scale=(0.5,1)),
+                                                                                    # iaa.Affine(rotate=(-25, 25)),
+                                                                                    iaa.Crop(percent=(0, 0.2)),
+                                                                                    iaa.Fliplr(0.2),
+                                                                                    iaa.Flipud(0.2)])
+                                                                                    #  ,random_order=True)
+
+                ia_bbs = [ia.BoundingBox(x1=b[0], y1=b[1],x2=b[2], y2=b[3]) for b in y_boxes]
+                ia_boxes=ia.BoundingBoxesOnImage(ia_bbs, shape=(256,256))
+                image_aug, bbs_aug = seq(image=img, bounding_boxes=ia_boxes)
+
+                for i in range(len(bbs_aug.bounding_boxes)):
+                    bb = bbs_aug.bounding_boxes[i]
+                    annot=[int(bb.x1),int(bb.y1),int(bb.x2),int(bb.y2)]
+                    y_.append(np.clip(annot, 0, self.dim[0] - 1))
+
+                img = image_aug
+                y_boxes = y_
+
             if self.hist_eq:
                 img= exposure.equalize_adapthist(img)
-            
             
             if self.normalize and img.max()>1:
                 img=np.array(img,np.float32)/255
             
+            X.append(img)
             
+            y_boxes= processGroundTruth(np.array(y_boxes),np.array(labels), self.TINY_YOLOV2_ANCHOR_PRIORS , self.network_output_shape)
+            y.append(y_boxes)
+        return np.array(X), np.array(y)
+
+    def load_img(self,img_path):
+        dcm_data = pydicom.read_file(img_path)
+        a = dcm_data.pixel_array
+        a=cv2.resize(a,(self.dim))
+        if self.n_channels == 3:
+            a = cv2.cvtColor(np.array(a, dtype=np.uint8), cv2.COLOR_GRAY2RGB)
+
+        if self.preprocess != None:
+            a= self.preprocess(a)
             
-            X.append(np.asarray(img))  # self.preprocess_fct(np.asarray(img))
-            Y.append(np.asarray(mask, dtype=np.int8))
-        
-        return np.array(X), np.expand_dims(np.array(Y),axis=3)
-    
-    
-def get_train_validation_generator(csv_path,img_path ,batch_size=8, dim=(256,256), n_channels=3, shuffle=True ,preprocess = None , only_positive=True, validation_split=0.2,augmentation=False,normalize=False,hist_eq =False,batch_positive_portion=None ):
+
+        return a
+
+
+def get_train_validation_generator(csv_path,img_path ,batch_size=8, dim=(256,256), n_channels=3,
+                  shuffle=True ,preprocess = None , only_positive=True, validation_split=0.2,augmentation=False,normalize=False,hist_eq =False,batch_positive_portion=None  ):
+
 
   df = pd.read_csv(csv_path)
   if only_positive:
-    df = df[df[" EncodedPixels"]!=' -1']
+    df = df[df["Target"] == 1]
 
-  random.seed(42)
-  patient_ids = df["ImageId"].unique()
+  random.seed(41)
+  patient_ids = df["patientId"].unique()
   random.shuffle(patient_ids)
 
   patient_ids_train = patient_ids[int(len(patient_ids)*validation_split ):]
@@ -214,14 +229,12 @@ def get_train_validation_generator(csv_path,img_path ,batch_size=8, dim=(256,256
 
   if augmentation == True:
         augmentation='train'
-  train_gen = Seg_gen(csv_path,patient_ids_train , img_path ,batch_size=batch_size, dim=dim, n_channels=n_channels,
-                         shuffle=shuffle, preprocess_fct = preprocess,augmentation=augmentation, normalize=normalize,hist_eq=hist_eq,batch_positive_portion=batch_positive_portion,split_type='train')
-
+  train_gen = det_gen(df,patient_ids_train , img_path ,batch_size=batch_size, dim=dim, n_channels=n_channels,
+                shuffle=shuffle, preprocess = preprocess,augmentation=augmentation,normalize=normalize,hist_eq =hist_eq,batch_positive_portion=batch_positive_portion,split_type='train' )
+  
   if augmentation == 'train':
-        augmentation='validation'
-        
-  validation_gen = Seg_gen(csv_path, patient_ids_validation, img_path, batch_size=batch_size, dim=dim, n_channels=n_channels,
-                       shuffle=shuffle,  preprocess_fct=preprocess,augmentation=augmentation, normalize=normalize,hist_eq=hist_eq,batch_positive_portion=batch_positive_portion,split_type='validation')
-
+    augmentation='validation'
+  validation_gen = det_gen(df, patient_ids_validation, img_path, batch_size=batch_size, dim=dim, n_channels=n_channels,
+                       shuffle=shuffle, preprocess=preprocess,augmentation=augmentation,normalize=normalize,hist_eq =hist_eq,batch_positive_portion=batch_positive_portion,split_type='validation')
 
   return train_gen, validation_gen
