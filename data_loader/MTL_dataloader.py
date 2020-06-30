@@ -76,7 +76,7 @@ class MTL_generatot(tensorflow.keras.utils.Sequence):
         return X, [Y_class, Y_det, Y_seg]
 
 def get_train_validation_generator(det_csv_path,seg_csv_path , det_img_path, seg_img_path ,batch_size=8, dim=(256,256), n_channels=3,
-                  shuffle=True ,preprocess = None , only_positive=True, validation_split=0.2,augmentation=False,normalize=False,hist_eq=False ):
+                  shuffle=True ,preprocess = None , only_positive=True, validation_split=0.2,augmentation=False,normalize=False,hist_eq=False,batch_positive_portion=None ):
 
 
 
@@ -89,7 +89,7 @@ def get_train_validation_generator(det_csv_path,seg_csv_path , det_img_path, seg
                                                                                 augmentation=augmentation,
                                                                                 normalize=normalize,
                                                                                 hist_eq=hist_eq,
-                                                                                validation_split=validation_split)
+                                                                                validation_split=validation_split,batch_positive_portion=batch_positive_portion)
 
     det_train_gen, det_valid_gen = detection_get_train_validation_generator(det_csv_path, det_img_path,
                                                                                 batch_size=batch_size, dim=dim,
@@ -99,7 +99,7 @@ def get_train_validation_generator(det_csv_path,seg_csv_path , det_img_path, seg
                                                                                 augmentation=augmentation,
                                                                                 normalize=normalize,
                                                                                 hist_eq=hist_eq,
-                                                                                validation_split=validation_split)
+                                                                                validation_split=validation_split,batch_positive_portion=batch_positive_portion)
 
     MTL_train_gen = MTL_generatot(seg_train_gen, det_train_gen , seg_train_gen.nb_iteration+det_train_gen.nb_iteration ,batch_size=batch_size )
     MTL_valid_gen = MTL_generatot(seg_valid_gen, det_valid_gen, seg_valid_gen.nb_iteration + det_valid_gen.nb_iteration , batch_size=batch_size)
