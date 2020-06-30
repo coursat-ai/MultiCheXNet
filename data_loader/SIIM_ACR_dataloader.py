@@ -72,7 +72,7 @@ def masks_as_image(rle_list, shape):
 class Seg_gen(tensorflow.keras.utils.Sequence):
     'Generates data from a Dataframe'
 
-    def __init__(self, df_path,patient_ids, train_path, preprocess_fct=None, batch_size=32, dim=(256, 256), shuffle=True , n_channels=3,augmentation=None,normalize=False,hist_eq=False):
+    def __init__(self, df_path,patient_ids, train_path, preprocess_fct=None, batch_size=32, dim=(256, 256), shuffle=True , n_channels=3,augmentation=None,normalize=False,hist_eq=False,batch_positive_portion=None,split_type='train'):
         'Initialization'
         
         rle_csv = pd.read_csv(df_path)
@@ -89,11 +89,15 @@ class Seg_gen(tensorflow.keras.utils.Sequence):
         self.normalize = normalize
         self.augmentation= augmentation
         self.hist_eq = hist_eq
+        
+        self.split_type=split_type
 
         self.n = len(self.patient_ids)
         self.nb_iteration = int(np.floor(self.n / self.batch_size))
         
         self.n_channels = n_channels
+        self.batch_positive_portion= batch_positive_portion
+        
 
     def __len__(self):
         'Denotes the number of batches per epoch'
@@ -101,12 +105,10 @@ class Seg_gen(tensorflow.keras.utils.Sequence):
 
     def __getitem__(self, index):
         'Generate one batch of data'
-        # Generate indexes of the batch
-        
-        indexes = range(index*self.batch_size, min((index*self.batch_size)+self.batch_size ,len(self.patient_ids) ))
+        # Generate indexes of the batch        
         
         # Generate data
-        X, y = self.__data_generation(indexes)
+        X, y = self.__data_generation(index)
 
         return X, y
 
@@ -117,11 +119,36 @@ class Seg_gen(tensorflow.keras.utils.Sequence):
     def __data_generation(self, index):
         'Generates data containing batch_size samples'  # X : (n_samples, *dim, n_channels)
         # Initialization
+        
+        if self.batch_positive_portion==None or self.split_type!='train':
+            indexes = range(index*self.batch_size, min((index*self.batch_size)+self.batch_size ,len(self.patient_ids) ))
+            patient_ids= self.patient_ids[indexes]
+        else: 
+            filtered_df = self.df[self.df["ImageId"].isin(self.patient_ids)]
+            filtered_df_positive =  filtered_df[filtered_df[" EncodedPixels"]!=' -1']
+            filtered_df_negative =  filtered_df[filtered_df[" EncodedPixels"]==' -1']
+            
+            positive_ids= filtered_df_positive['ImageId'].tolist()
+            negative_ids= filtered_df_negative['ImageId'].tolist()
+            
+            random.shuffle(positive_ids)
+            random.shuffle(negative_ids)
+            
+            num_positive = int((self.batch_size)*self.batch_positive_portion)
+            num_negative = self.batch_size - num_positive
+            
+            patient_ids= positive_ids[:num_positive]
+            patient_ids+= negative_ids[:num_negative]
+            
+            random.shuffle(patient_ids)
+            
+            
+            
 
         X = []#np.empty((self.batch_size, self.dim[0],self.dim[1],self.n_channels))
         Y = []#np.empty((self.batch_size,  self.dim[0],self.dim[1]))
         
-        patient_ids= self.patient_ids[index]
+        
         # Generate data
         for i, ID in enumerate(patient_ids):
             # Read the image
@@ -172,7 +199,7 @@ class Seg_gen(tensorflow.keras.utils.Sequence):
         return np.array(X), np.expand_dims(np.array(Y),axis=3)
     
     
-def get_train_validation_generator(csv_path,img_path ,batch_size=8, dim=(256,256), n_channels=3, shuffle=True ,preprocess = None , only_positive=True, validation_split=0.2,augmentation=False,normalize=False,hist_eq =False ):
+def get_train_validation_generator(csv_path,img_path ,batch_size=8, dim=(256,256), n_channels=3, shuffle=True ,preprocess = None , only_positive=True, validation_split=0.2,augmentation=False,normalize=False,hist_eq =False,batch_positive_portion=None ):
 
   df = pd.read_csv(csv_path)
   if only_positive:
@@ -188,13 +215,13 @@ def get_train_validation_generator(csv_path,img_path ,batch_size=8, dim=(256,256
   if augmentation == True:
         augmentation='train'
   train_gen = Seg_gen(csv_path,patient_ids_train , img_path ,batch_size=batch_size, dim=dim, n_channels=n_channels,
-                         shuffle=shuffle, preprocess_fct = preprocess,augmentation=augmentation, normalize=normalize,hist_eq=hist_eq)
+                         shuffle=shuffle, preprocess_fct = preprocess,augmentation=augmentation, normalize=normalize,hist_eq=hist_eq,batch_positive_portion=batch_positive_portion,split_type='train')
 
   if augmentation == 'train':
         augmentation='validation'
         
   validation_gen = Seg_gen(csv_path, patient_ids_validation, img_path, batch_size=batch_size, dim=dim, n_channels=n_channels,
-                       shuffle=shuffle,  preprocess_fct=preprocess,augmentation=augmentation, normalize=normalize,hist_eq=hist_eq)
+                       shuffle=shuffle,  preprocess_fct=preprocess,augmentation=augmentation, normalize=normalize,hist_eq=hist_eq,batch_positive_portion=batch_positive_portion,split_type='validation')
 
 
   return train_gen, validation_gen
