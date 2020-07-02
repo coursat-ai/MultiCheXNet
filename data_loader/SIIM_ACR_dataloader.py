@@ -62,7 +62,7 @@ def rle2mask(rle, width, height):
 
 def masks_as_image(rle_list, shape):
     # Take the individual masks and create a single mask array
-    all_masks = np.zeros(shape, dtype=np.uint8)
+    all_masks = np.zeros(shape, dtype=np.uint32)
     for mask in rle_list:
         if isinstance(mask, str) and mask != '-1':
             all_masks |= rle2mask(mask, shape[0], shape[1]).T.astype(bool)
@@ -162,7 +162,7 @@ class Seg_gen(tensorflow.keras.utils.Sequence):
             
             
             if self.n_channels == 3:
-                img = cv2.cvtColor(np.array(img, dtype=np.uint8), cv2.COLOR_GRAY2RGB)
+                img = cv2.cvtColor(np.array(img, dtype=np.uint32), cv2.COLOR_GRAY2RGB)
             
             img = np.asarray(cv2.resize(img, self.dim))
 
@@ -194,7 +194,7 @@ class Seg_gen(tensorflow.keras.utils.Sequence):
             
             
             X.append(np.asarray(img))  # self.preprocess_fct(np.asarray(img))
-            Y.append(np.asarray(mask, dtype=np.int8))
+            Y.append(np.asarray(mask, dtype=np.int32))
         
         return np.array(X), np.expand_dims(np.array(Y),axis=3)
     
