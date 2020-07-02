@@ -162,7 +162,7 @@ class Seg_gen(tensorflow.keras.utils.Sequence):
             
             
             if self.n_channels == 3:
-                img = cv2.cvtColor(np.array(img, dtype=np.uint32), cv2.COLOR_GRAY2RGB)
+                img = cv2.cvtColor(np.array(img, dtype=np.uint8), cv2.COLOR_GRAY2RGB)
             
             img = np.asarray(cv2.resize(img, self.dim))
 
