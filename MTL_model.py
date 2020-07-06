@@ -1,8 +1,8 @@
-from .utils.ModelBlock import ModelBlock
-from .utils.Encoder import Encoder
-from .utils.Detector import Detector
-from .utils.Segmenter import Segmenter
-from .utils.Classifier import Classifier
+from .ModelBlock import ModelBlock
+from .Encoder import Encoder
+from .Detector import Detector
+from .Segmenter import Segmenter
+from .Classifier import Classifier
 
 class MTL_model():
     def __init__(self,dim=(256,256),add_class_head=True,add_detector_head=True,
@@ -10,7 +10,7 @@ class MTL_model():
         img_size = 256
         n_classes = 1
         self.encoder = Encoder(weights=None)
-
+        self.encoder_num_layers = len(self.encoder.model.layers)
         self.add_class_head=add_class_head
         self.add_detector_head=add_detector_head
         self.add_segmenter_head=add_segmenter_head
@@ -26,6 +26,11 @@ class MTL_model():
             self.segmenter = Segmenter(self.encoder)
             heads.append(self.segmenter)
             
+        if self.add_class_head and self.add_detector_head and self.add_segmenter_head:
+            self.classification_layers = [504,507,510,513,516]
+            self.detector_layers = [505,508,511,514,517]
+            self.segmenter_layers = sorted(list((set(range(427,519)) - set(classification_layers) - set(detector_layers))))
+        
         self.MTL_model = ModelBlock.add_heads(self.encoder, heads)
 
 
