@@ -62,3 +62,70 @@ class MTL_model():
             combined_losses = combined_losses[0]
 
         return combined_losses
+    
+    
+def load_weights(mtl_clss,weight_path, weight_part ,source):
+    """
+    mtl_clss:
+        MTL_class to load weights to
+
+    weight_part:
+      detector
+      segmenter
+      classifier
+      encoder
+
+    source:
+      detector
+      segmenter
+      classifier
+      MTL
+
+      numpy
+    """
+    
+    if source=='detector':
+        other_model=MTL_model(add_class_head=False,add_detector_head=True,add_segmenter_head=False)
+        other_model.MTL_model.load_weights(weight_path)
+    elif source=='segmenter':
+        other_model=MTL_model(add_class_head=False,add_detector_head=False,add_segmenter_head=True)
+        other_model.MTL_model.load_weights(weight_path)
+    elif source=='classifier':
+        other_model=MTL_model(add_class_head=True,add_detector_head=False,add_segmenter_head=False)
+        other_model.MTL_model.load_weights(weight_path)
+    elif source== 'MTL':
+        other_model=MTL_model()
+        other_model.MTL_model.load_weights(weight_path)
+    
+
+    if source!='MTL':
+        if weight_part=='detector':
+          other_model_layers=list(range(other_model.encoder_num_layers,len(other_model.MTL_model.layers)))
+          this_model_layers = mtl_clss.detector_layers
+        if weight_part=='segmenter':
+          other_model_layers=list(range(other_model.encoder_num_layers,len(other_model.MTL_model.layers)))
+          this_model_layers=mtl_clss.segmenter_layers
+        if weight_part=='classifier':
+          other_model_layers=list(range(other_model.encoder_num_layers,len(other_model.MTL_model.layers)))
+          this_model_layers= mtl_clss.classification_layers
+
+    if source=='MTL':
+        if weight_part=='detector':
+          other_model_layers=other_model.detector_layers
+          this_model_layers = mtl_clss.detector_layers
+        if weight_part=='segmenter':
+          other_model_layers=other_model.segmenter_layers
+          this_model_layers=mtl_clss.segmenter_layers
+        if weight_part=='classifier':
+          other_model_layers=other_model.classification_layers
+          this_model_layers= mtl_clss.classification_layers
+    
+    if weight_part=='encoder':
+        other_model_layers = list(range(0,other_model.encoder_num_layers))
+        this_model_layers = list(range(0,mtl_clss.encoder_num_layers))
+
+    for index_to , index_from in zip(this_model_layers,other_model_layers):
+        print(index_to,index_from)
+        mtl_clss.MTL_model.layers[index_to].set_weights(other_model.MTL_model.layers[index_from].get_weights())
+
+    return mtl_clss
