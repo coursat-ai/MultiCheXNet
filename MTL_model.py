@@ -29,7 +29,7 @@ class MTL_model():
         if self.add_class_head and self.add_detector_head and self.add_segmenter_head:
             self.classification_layers = [504,507,510,513,516]
             self.detector_layers = [505,508,511,514,517]
-            self.segmenter_layers = sorted(list((set(range(427,519)) - set(classification_layers) - set(detector_layers))))
+            self.segmenter_layers = sorted(list((set(range(427,519)) - set(self.classification_layers) - set(self.detector_layers))))
         
         self.MTL_model = ModelBlock.add_heads(self.encoder, heads)
 
