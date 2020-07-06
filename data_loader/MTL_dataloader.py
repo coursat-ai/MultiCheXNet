@@ -94,7 +94,7 @@ class MTL_generatot(tensorflow.keras.utils.Sequence):
                     self.first_flag=1
                     self.seg_itterator = self.seg_generator.__iter__()
                     
-            if self.first_flag==0:
+            if self.first_flag==1:
                  try:
                     X, Y_det = next(self.det_itterator)
                     Y_class= []
