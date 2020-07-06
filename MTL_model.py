@@ -1,8 +1,8 @@
-from .ModelBlock import ModelBlock
-from .Encoder import Encoder
-from .Detector import Detector
-from .Segmenter import Segmenter
-from .Classifier import Classifier
+from .utils.ModelBlock import ModelBlock
+from .utils.Encoder import Encoder
+from .utils.Detector import Detector
+from .utils.Segmenter import Segmenter
+from .utils.Classifier import Classifier
 
 class MTL_model():
     def __init__(self,dim=(256,256),add_class_head=True,add_detector_head=True,
