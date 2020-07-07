@@ -95,7 +95,7 @@ class MTL_generatot(tensorflow.keras.utils.Sequence):
                     self.seg_itterator = self.seg_generator.__iter__()
                     
             if self.first_flag==1:
-                 try:
+                try:
                     X, Y_det = next(self.det_itterator)
                     Y_class= []
                     for yy in Y_det:
@@ -107,8 +107,8 @@ class MTL_generatot(tensorflow.keras.utils.Sequence):
                     Y_det= np.array(Y_det)
                     Y_seg = np.ones([self.batch_size,256,256,1])*-1
                 except:
-                   self.first_flag=0
-                   self.det_itterator = self.det_generator.__iter__()
+                    self.first_flag=0
+                    self.det_itterator = self.det_generator.__iter__()
    
 
         return X, [Y_class, Y_det, Y_seg]
