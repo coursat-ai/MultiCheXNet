@@ -139,8 +139,8 @@ def get_train_validation_generator(det_csv_path,seg_csv_path , det_img_path, seg
                                                                                 hist_eq=hist_eq,
                                                                                 validation_split=validation_split,batch_positive_portion=batch_positive_portion)
 
-    MTL_train_gen = MTL_generatot(seg_train_gen, det_train_gen , seg_train_gen.nb_iteration+det_train_gen.nb_iteration ,batch_size=batch_size , 'train')
-    MTL_valid_gen = MTL_generatot(seg_valid_gen, det_valid_gen, seg_valid_gen.nb_iteration + det_valid_gen.nb_iteration , batch_size=batch_size, 'val')
+    MTL_train_gen = MTL_generatot(seg_train_gen, det_train_gen , seg_train_gen.nb_iteration+det_train_gen.nb_iteration ,batch_size=batch_size , gen_type='train')
+    MTL_valid_gen = MTL_generatot(seg_valid_gen, det_valid_gen, seg_valid_gen.nb_iteration + det_valid_gen.nb_iteration , batch_size=batch_size, gen_type='val')
 
     return MTL_train_gen, MTL_valid_gen
 
