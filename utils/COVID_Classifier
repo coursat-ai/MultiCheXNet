@@ -3,7 +3,7 @@ from tensorflow.keras.layers import Flatten,Input,Dense, GlobalAveragePooling2D 
 from tensorflow.keras.regularizers import l2
 from tensorflow.keras.losses import categorical_crossentropy
 
-class Classifier(ModelBlock):
+class COVID_Classifier(ModelBlock):
     def __init__(self, encoder):
         self.encoder_output = encoder.model.output
         self.model = self.make_model()
