@@ -3,10 +3,11 @@ from .utils.Encoder import Encoder
 from .utils.Detector import Detector
 from .utils.Segmenter import Segmenter
 from .utils.Classifier import Classifier
+from .utils.COVID_Classifier import COVID_Classifier
 
 class MTL_model():
     def __init__(self,dim=(256,256),add_class_head=True,add_detector_head=True,
-                 add_segmenter_head=True):
+                 add_segmenter_head=True,classifier_type="MTL"):
         img_size = 256
         n_classes = 1
         self.encoder = Encoder(weights=None)
@@ -17,8 +18,12 @@ class MTL_model():
         
         heads = []
         if self.add_class_head:
-            self.classifier = Classifier(self.encoder)
-            heads.append(self.classifier)
+            if classifier_type=="MTL":
+                self.classifier = Classifier(self.encoder)
+                heads.append(self.classifier)
+            if classifier_type == "COVID":
+                self.classifier = COVID_Classifier(self.encoder)
+                heads.append(self.classifier)
         if self.add_detector_head:
             self.detector = Detector(self.encoder, img_size, n_classes)
             heads.append(self.detector)
@@ -32,6 +37,15 @@ class MTL_model():
             self.segmenter_layers = sorted(list((set(range(427,519)) - set(self.classification_layers) - set(self.detector_layers))))
         
         self.MTL_model = ModelBlock.add_heads(self.encoder, heads)
+        
+        if int(self.add_class_head)+int(self.add_detector_head)+int(self.add_segmenter_head) ==1:
+            if self.add_class_head:
+                 self.classification_layers =list(range(self.encoder_num_layers,len(self.MTL_model.layers)))
+            if self.add_detector_head:
+                 self.detector_layers =list(range(self.encoder_num_layers,len(self.MTL_model.layers)))
+            if self.add_segmenter_head:
+                 self.segmenter_layers =list(range(self.encoder_num_layers,len(self.MTL_model.layers)))
+        
 
 
     def get_MTL_loss(self,classification_loss=None,detector_loss=None,segmenter_loss=None):
@@ -97,17 +111,6 @@ def load_weights(mtl_clss,weight_path, weight_part ,source):
         other_model=MTL_model()
         other_model.MTL_model.load_weights(weight_path)
     
-
-    if source!='MTL':
-        if weight_part=='detector':
-          other_model_layers=list(range(other_model.encoder_num_layers,len(other_model.MTL_model.layers)))
-          this_model_layers = mtl_clss.detector_layers
-        if weight_part=='segmenter':
-          other_model_layers=list(range(other_model.encoder_num_layers,len(other_model.MTL_model.layers)))
-          this_model_layers=mtl_clss.segmenter_layers
-        if weight_part=='classifier':
-          other_model_layers=list(range(other_model.encoder_num_layers,len(other_model.MTL_model.layers)))
-          this_model_layers= mtl_clss.classification_layers
 
     if source=='MTL':
         if weight_part=='detector':
