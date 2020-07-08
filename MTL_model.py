@@ -78,7 +78,7 @@ class MTL_model():
         return combined_losses
     
     
-def load_weights(mtl_clss,weight_path, weight_part ,source):
+def load_weights(mtl_clss,weight_path, weight_part ,source, skip_end=0):
     """
     mtl_clss:
         MTL_class to load weights to
@@ -126,7 +126,11 @@ def load_weights(mtl_clss,weight_path, weight_part ,source):
     if weight_part=='encoder':
         other_model_layers = list(range(0,other_model.encoder_num_layers))
         this_model_layers = list(range(0,mtl_clss.encoder_num_layers))
-
+    
+    if skip_end>0:
+        other_model_layers=other_model_layers[:-skip_end]
+        this_model_layers=this_model_layers[:-skip_end]
+    
     for index_to , index_from in zip(this_model_layers,other_model_layers):
         print(index_to,index_from)
         mtl_clss.MTL_model.layers[index_to].set_weights(other_model.MTL_model.layers[index_from].get_weights())
