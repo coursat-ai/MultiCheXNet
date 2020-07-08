@@ -51,7 +51,7 @@ def get_predictions_GT_single_head(predictions ,Y, Ground_truth_dict ,prediction
     if model_type == 'segmenter':
         model_type= "segmentation"
     
-    if model_type == 'classification':
+    if model_type == 'classifier':
         model_type= "classification"
         
     if np.isnan(Ground_truth_dict[model_type]).all():
