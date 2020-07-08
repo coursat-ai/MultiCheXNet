@@ -66,7 +66,7 @@ def get_predictions_GT_single_head(predictions ,Y, Ground_truth_dict ,prediction
         
     return Ground_truth_dict,predictions_dict
     
-def evaluate(val_gen,model , model_type="" , anchors=None):
+def evaluate(val_gen,model , model_type= ,is_classification_type_binary=False, anchors=None):
     
     """
     val_gen: keras data generator.
@@ -121,5 +121,5 @@ def evaluate(val_gen,model , model_type="" , anchors=None):
         return dice_coef
     
     if model_type=="classifier":
-        f1,per,rec,acc = evaluate_classification(Ground_truth_dict["classification"], predictions_dict['classification'])
+        f1,per,rec,acc = evaluate_classification(Ground_truth_dict["classification"], predictions_dict['classification'],binary=is_classification_type_binary)
         return (f1,per,rec,acc)
