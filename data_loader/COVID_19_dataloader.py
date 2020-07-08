@@ -1,5 +1,3 @@
-from keras.utils import Sequence
-from keras.preprocessing.image import ImageDataGenerator
 import math
 import os
 from glob import glob
@@ -8,6 +6,7 @@ import pandas as pd
 import cv2
 import os
 import numpy as np
+import tensorflow
 
 from albumentations import (
     Compose, HorizontalFlip, CLAHE, HueSaturationValue,
@@ -35,7 +34,7 @@ AUGMENTATIONS_TRAIN = Compose([
 
 
 
-class dicom_data_generator(Sequence):
+class dicom_data_generator(tensorflow.keras.utils.Sequence):
   def __init__(self, df,dataset_path,dim=(256,256),batch_size=16,randomize=True,split="training", normalize=False,hist_eq=False, data_aug=False):
     self.dataset_path = dataset_path
     self.batch_size = batch_size
