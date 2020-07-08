@@ -66,7 +66,7 @@ def get_predictions_GT_single_head(predictions ,Y, Ground_truth_dict ,prediction
         
     return Ground_truth_dict,predictions_dict
     
-def evaluate(val_gen,model , model_type= ,is_classification_type_binary=False, anchors=None):
+def evaluate(val_gen,model , model_type ,is_classification_type_binary=False, anchors=None):
     
     """
     val_gen: keras data generator.
