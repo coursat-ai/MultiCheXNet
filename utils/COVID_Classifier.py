@@ -1,7 +1,7 @@
 from .ModelBlock import ModelBlock
 from tensorflow.keras.layers import Flatten,Input,Dense, GlobalAveragePooling2D , Dropout
 from tensorflow.keras.regularizers import l2
-from tensorflow.keras.losses import categorical_crossentropy
+from tensorflow.keras.losses import BinaryCrossentropy
 
 class COVID_Classifier(ModelBlock):
     def __init__(self, encoder):
@@ -24,4 +24,4 @@ class COVID_Classifier(ModelBlock):
 
         return X
     def loss(self,y_true,y_pred):
-        return categorical_crossentropy(y_true,y_pred)
+        return BinaryCrossentropy(y_true,y_pred)
