@@ -129,6 +129,6 @@ def get_train_validation_generator(csv_path,img_path,batch_size=8, dim=(256,256)
                                      dim=dim,
                                      normalize=normalize,
                                      hist_eq=hist_eq,
-                                     randomize=shuffle)
+                                     randomize=False)
 
     return train_gen,valid_gen   
