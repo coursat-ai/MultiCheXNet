@@ -115,7 +115,7 @@ def get_train_validation_generator(csv_path,img_path,batch_size=8, dim=(256,256)
     df["split"] = df["split"]+ ((prob>=validation_split)*1)
     df["split"] = df["split"]+((prob<validation_split)*2)
                                
-    train_gen = dicom_data_generator(df,images_path ,
+    train_gen = dicom_data_generator(df,img_path ,
                                      batch_size=batch_size,
                                      split="training" ,
                                      dim=dim,
@@ -124,7 +124,7 @@ def get_train_validation_generator(csv_path,img_path,batch_size=8, dim=(256,256)
                                      hist_eq=hist_eq,
                                      data_aug=augmentation)
     
-    valid_gen = dicom_data_generator(df,images_path ,
+    valid_gen = dicom_data_generator(df,img_path ,
                                      batch_size=batch_size,
                                      split="validation",
                                      dim=dim,
