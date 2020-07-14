@@ -4,6 +4,7 @@ from .utils.Detector import Detector
 from .utils.Segmenter import Segmenter
 from .utils.Classifier import Classifier
 from .utils.COVID_Classifier import COVID_Classifier
+from .utils.NIH_Classifier.py import Classifier as NIH_classifier
 
 class MTL_model():
     def __init__(self,dim=(256,256),add_class_head=True,add_detector_head=True,
@@ -20,10 +21,11 @@ class MTL_model():
         if self.add_class_head:
             if classifier_type=="MTL":
                 self.classifier = Classifier(self.encoder)
-                heads.append(self.classifier)
             if classifier_type == "COVID":
                 self.classifier = COVID_Classifier(self.encoder)
-                heads.append(self.classifier)
+            if classifier_type == "NIH":
+                self.classifier = NIH_classifier(self.encoder)
+            heads.append(self.classifier)
         if self.add_detector_head:
             self.detector = Detector(self.encoder, img_size, n_classes)
             heads.append(self.detector)
