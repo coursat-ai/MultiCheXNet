@@ -5,7 +5,6 @@ from tensorflow.keras.losses import BinaryCrossentropy
 
 class Classifier(ModelBlock):
     def __init__(self, encoder):
-        super().__init__()
         self.encoder_output = encoder.model.output
         self.model = self.make_model()
         self.num_layers = ModelBlock.get_head_num_layers(encoder, self.model)
