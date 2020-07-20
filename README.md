@@ -9,6 +9,8 @@
 ## Introduction
 MultiChexNet is a model that is able to classify, detect, and segment chest related diseases in one forward propagation. We apply the concept of the [MultiNet architecture](https://arxiv.org/pdf/1612.07695.pdf) to medical images. This architecture did not only speed up inference time for the three tasks but we also saw improvements over training individual models at a time. 
 
+![overall_results](pics/pred_2.png)
+
 ## Example_Results
 **Segmentation results** 
 ![segmentation_results](pics/Mask_predictions.png)
