@@ -119,7 +119,7 @@ def get_train_validation_generator(csv_path,img_path,batch_size=8, dim=(256,256)
                                      split="training" ,
                                      dim=dim,
                                      normalize=normalize ,
-                                     randomize=shuffle,
+                                     randomize=shuffle_train,
                                      hist_eq=hist_eq,
                                      data_aug=augmentation)
     
