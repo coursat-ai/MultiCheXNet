@@ -100,7 +100,7 @@ class dicom_data_generator(tensorflow.keras.utils.Sequence):
     return X ,np.expand_dims(np.array(Y),axis=-1)
     
     
-def get_train_validation_generator(csv_path,img_path,batch_size=8, dim=(256,256),shuffle=True , validation_split=0.2,augmentation=False,normalize=False,hist_eq=False):
+def get_train_validation_generator(csv_path,img_path,batch_size=8, dim=(256,256),shuffle_train=True,shuffle_val=False, validation_split=0.2,augmentation=False,normalize=False,hist_eq=False):
     csv_path = "covid-chestxray-dataset/metadata.csv"
     img_path= "covid-chestxray-dataset/images/"
     df= pd.read_csv(csv_path)
@@ -129,6 +129,6 @@ def get_train_validation_generator(csv_path,img_path,batch_size=8, dim=(256,256)
                                      dim=dim,
                                      normalize=normalize,
                                      hist_eq=hist_eq,
-                                     randomize=False)
+                                     randomize=shuffle_val)
 
     return train_gen,valid_gen   
