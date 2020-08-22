@@ -10,7 +10,7 @@ from .text_cleaner import normalize_text
 
 class det_gen(tensorflow.keras.utils.Sequence):
     'Generates data from a Dataframe'
-    def __init__(self,df, tok, max_len,images_path, dim=(256,256), batch_size=8):
+    def __init__(self,df, tok, max_len,images_path, dim=(256,256), batch_size=8,preprocess_func=None):
         self.df=df
         self.dim = dim
         self.images_path = images_path
@@ -18,6 +18,7 @@ class det_gen(tensorflow.keras.utils.Sequence):
         self.max_len = max_len
         self.batch_size = batch_size
         self.nb_iteration = math.ceil((self.df.shape[0])/self.batch_size)
+        self.preprocess_func = preprocess_func
 
     def __len__(self):
         'Denotes the number of batches per epoch'
@@ -31,7 +32,9 @@ class det_gen(tensorflow.keras.utils.Sequence):
         
         img = cv2.imread(img_path)
         img =cv2.resize(img,(self.dim))
-        
+        if self.preprocess_func is not None:
+            img=self.preprocess_func(img)
+            
         return img
         
     
@@ -98,8 +101,8 @@ def get_train_validation_generator(csv_path1,csv_path2,img_path, vocab_size,max_
     df_train = df.iloc[:-int(df.shape[0]*validation_split)]
     df_val   = df.iloc[-int(df.shape[0]*validation_split):]
     
-    train_dataloader =  det_gen(df_train, tok, max_len,img_path)
-    val_dataloader =  det_gen(df_val, tok, max_len,img_path)
+    train_dataloader =  det_gen(df_train, tok, max_len,img_path,dim=dim,batch_size=batch_size,preprocess_func=preprocess )
+    val_dataloader =  det_gen(df_val, tok, max_len,img_path,dim=dim,batch_size=batch_size,preprocess_func=preprocess )
     
 
     return train_dataloader, val_dataloader, vocab_size, tok
