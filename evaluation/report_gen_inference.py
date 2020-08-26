@@ -28,10 +28,12 @@ def greedy_inference(input_img, tok,encoder_model, decoder_model,max_len,start_t
         word_probs , hidden_layer = decoder_model.predict([[np.array([word]),hidden_layer]])
         hidden_layer=hidden_layer[0]
         word = np.argmax(word_probs)
-
-        if tok.index_word[word]==end_token:
-            break
-        
+        try:
+            if tok.index_word[word]==end_token:
+                break
+        except:
+            pass
+            
         words.append(word)
         
     words = tokens_to_text(words,tok)
