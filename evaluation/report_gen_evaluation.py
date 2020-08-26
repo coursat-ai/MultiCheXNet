@@ -1,5 +1,6 @@
 import numpy as np
 from nltk.translate.bleu_score import corpus_bleu
+from .report_gen_inference import greedy_inference
 
 def get_predictions_from_data_loader(data_loader,tok,encoder_model, decoder_model,max_len,start_token="startseq",end_token='endseq', inference_type='greedy'):
     
