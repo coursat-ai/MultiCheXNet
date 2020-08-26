@@ -18,22 +18,31 @@ def tokens_to_text(tokens,tok,end_token='endseq'):
     return sentence
 
 
-def greedy_inference(input_img, tok,encoder_model, decoder_model,max_len,start_token="startseq",end_token='endseq'):
-    hidden_layer  =encoder_model(np.expand_dims(input_img,axis=0))
+def greedy_inference(input_img, tok,encoder_model, decoder_model,max_len,start_token="startseq",end_token='endseq',decoder_type="LSTM"):
+    if decoder_type=='LSTM':
+        a0,c0  =encoder_model(np.expand_dims(input_img,axis=0))
+    elif decoder_type=='GRU': 
+        hidden_layer  =encoder_model(np.expand_dims(input_img,axis=0))
+        
     word = tok.word_index[start_token]
     
     words = []
     
     for index in range(max_len):
-        word_probs , hidden_layer = decoder_model.predict([[np.array([word]),hidden_layer]])
-        hidden_layer=hidden_layer[0]
+        if decoder_type=='LSTM':
+            word_probs , a0,c0 = decoder_model.predict([[np.array([word]),a0,c0]])
+        elif decoder_type=='GRU': 
+            word_probs , hidden_layer = decoder_model.predict([[np.array([word]),hidden_layer]])
+            hidden_layer=hidden_layer[0]
+        
         word = np.argmax(word_probs)
+        
         try:
             if tok.index_word[word]==end_token:
                 break
         except:
             pass
-            
+        
         words.append(word)
         
     words = tokens_to_text(words,tok)
