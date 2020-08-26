@@ -21,7 +21,7 @@ def get_predictions_from_data_loader(data_loader,tok,encoder_model, decoder_mode
         
         if index == data_loader.nb_iteration -1:
             break
-        print(index)
+        print("Done with batch number: {} ", index)
         
     return Gt_sentences, pred_sentences
 
