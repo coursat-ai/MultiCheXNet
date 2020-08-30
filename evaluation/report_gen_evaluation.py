@@ -12,7 +12,7 @@ def get_predictions_from_data_loader(data_loader,tok,encoder_model, decoder_mode
         for img,_,sample_y in zip(X[0],X[1],Y):
             
             if inference_type=='greedy':
-                pred_sentence = greedy_inference(img, tok,encoder_model, decoder_model,max_len,start_token="startseq",end_token='endseq',decoder_type='LSTM')
+                pred_sentence = greedy_inference(img, tok,encoder_model, decoder_model,max_len,start_token=start_token,end_token=end_token,decoder_type=decoder_type)
             
             GT_sentence   = tokens_to_text(sample_y,tok)
             
