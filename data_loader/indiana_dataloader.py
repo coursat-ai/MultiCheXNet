@@ -61,6 +61,8 @@ class det_gen(tensorflow.keras.utils.Sequence):
         
         img = cv2.imread(img_path)
         img =cv2.resize(img,(self.dim))
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        
         if self.preprocess_func is not None:
             img=self.preprocess_func(img)
         
