@@ -96,18 +96,18 @@ class det_gen(tensorflow.keras.utils.Sequence):
         
         x_batch = self.df['findings_cleaned'].iloc[indicies].tolist()
         # shuffle GT senetces 
-#         x_batch_shuffled = []
-#         for index in range(len(x_batch)):
-#             sentences = x_batch[index].strip().split('.')
-#             sentences_cleaned = []
-#             for index in range(len(sentences)):
-#                 sentences[index] = sentences[index].strip()
-#             if len(sentences[index])>2:
-#                 sentences_cleaned.append(sentences[index])
-#             shuffle(sentences_cleaned)
-#             x_batch_shuffled.append(".".join(sentences_cleaned))
+        x_batch_shuffled = []
+        for index_b in range(len(x_batch)):
+            sentences = x_batch[index_b].strip().split('.')
+            sentences_cleaned = []
+            for index in range(len(sentences)):
+                sentences[index] = sentences[index].strip()
+            if len(sentences[index])>2:
+                sentences_cleaned.append(sentences[index])
+            shuffle(sentences_cleaned)
+            x_batch_shuffled.append(".".join(sentences_cleaned))
         
-#         x_batch = x_batch_shuffled
+        x_batch = x_batch_shuffled
         
         x_batch_input = [sample[:-len(" endseq")] for sample in x_batch]
         
