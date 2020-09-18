@@ -95,21 +95,25 @@ class det_gen(tensorflow.keras.utils.Sequence):
         x_batch = self.df['findings_cleaned'].iloc[indicies].tolist()
         
         # shuffle GT senetces 
-        print("X_batch")
-        print(x_batch)
-        print("=====================================================================")
-        
+
         x_batch_shuffled = []
         for index_b in range(len(x_batch)):
-            sentences = x_batch[index_b].strip().split('.')
+            sent= x_batch[index_b]
+            sent = sent[len('startseq '):-len(' endseq')]
+            sentences = sent.strip().split('.')
+            
             sentences_cleaned = []
+
             for index in range(len(sentences)):
                 sentences[index] = sentences[index].strip()
-            if len(sentences[index])>2:
-                sentences_cleaned.append(sentences[index])
+                if len(sentences[index])>2:
+                    sentences_cleaned.append(sentences[index])
+                    
             shuffle(sentences_cleaned)
-            print(sentences_cleaned)
-            x_batch_shuffled.append(".".join(sentences_cleaned))
+            sentences_cleaned = ".".join(sentences_cleaned)
+            
+            sentences_cleaned = 'startseq '+ sentences_cleaned +' endseq'
+            x_batch_shuffled.append(sentences_cleaned)
         
         x_batch = x_batch_shuffled
         
@@ -148,7 +152,7 @@ def get_train_validation_generator(csv_path1,csv_path2,img_path, vocab_size,max_
     
     df= df.dropna(subset=['findings'])
     df['findings_cleaned'] = df['findings'].apply(normalize_text)
-    df['findings_cleaned'] = 'startseq '+df['findings_cleaned']+' endseq'
+    #df['findings_cleaned'] = 'startseq '+df['findings_cleaned']+' endseq'
     
     vocab_size = vocab_size
     max_len = max_len
