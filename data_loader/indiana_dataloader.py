@@ -117,6 +117,8 @@ class det_gen(tensorflow.keras.utils.Sequence):
         
         x_batch = x_batch_shuffled
         
+        print(x_batch)
+        
         x_batch_input = [sample[:-len(" endseq")] for sample in x_batch]
         
         x_batch_gt = [sample[len(" startseq"): ] for sample in x_batch]
