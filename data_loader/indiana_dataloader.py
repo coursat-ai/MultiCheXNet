@@ -7,6 +7,7 @@ import cv2
 import math
 import os
 from skimage import exposure
+from random import shuffle
 #from .text_cleaner import normalize_text
 from MultiCheXNet.data_loader.text_cleaner import normalize_text #Change with the commented import up
 
@@ -94,6 +95,19 @@ class det_gen(tensorflow.keras.utils.Sequence):
         
         
         x_batch = self.df['findings_cleaned'].iloc[indicies].tolist()
+        # shuffle GT senetces 
+        x_batch_shuffled = []
+        for index in range(x_batch):
+            sentences = x_batch[index].strip().split('.')
+            sentences_cleaned = []
+            for index in range(len(sentences)):
+                sentences[index] = sentences[index].strip()
+            if len(sentences[index])>2:
+                sentences_cleaned.append(sentences[index])
+            shuffle(sentences_cleaned)
+            x_batch_shuffled.append(".".join(sentences_cleaned))
+        
+        x_batch = x_batch_shuffled
         
         x_batch_input = [sample[:-len(" endseq")] for sample in x_batch]
         
