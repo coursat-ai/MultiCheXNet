@@ -95,7 +95,8 @@ class det_gen(tensorflow.keras.utils.Sequence):
         x_batch = self.df['findings_cleaned'].iloc[indicies].tolist()
         
         # shuffle GT senetces 
-
+        
+        print(x_batch)
         x_batch_shuffled = []
         for index_b in range(len(x_batch)):
             sent= x_batch[index_b]
