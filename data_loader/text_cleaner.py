@@ -32,7 +32,7 @@ def to_lowercase(text):
 
 def remove_punctuation(text):
     """Remove punctuation from list of tokenized words"""
-    translator = str.maketrans('', '', string.punctuation)
+    translator = str.maketrans('', '', string.punctuation.replace('.',''))
     return text.translate(translator)
 
 
