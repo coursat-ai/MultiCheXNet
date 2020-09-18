@@ -8,6 +8,7 @@ import math
 import os
 from skimage import exposure
 from random import shuffle
+import re
 #from .text_cleaner import normalize_text
 from MultiCheXNet.data_loader.text_cleaner import normalize_text #Change with the commented import up
 
@@ -156,8 +157,14 @@ def get_train_validation_generator(csv_path1,csv_path2,img_path, vocab_size,max_
     
     df= df.dropna(subset=['findings'])
     df['findings_cleaned'] = df['findings'].apply(normalize_text)
-    df['findings_cleaned']=df['findings_cleaned'].str.replace('.',' periodseq') 
+    df['findings_cleaned']=df['findings_cleaned'].str.replace('.',' periodseq ')
     df['findings_cleaned'] = 'startseq '+df['findings_cleaned']+' endseq'
+    def remove_double_spaces(x):
+        return re.sub(' +', ' ', x)
+    
+    df['findings_cleaned'] = df['findings_cleaned'].apply(remove_double_spaces)
+    
+    
     
     vocab_size = vocab_size
     max_len = max_len
