@@ -100,7 +100,7 @@ class det_gen(tensorflow.keras.utils.Sequence):
         for index_b in range(len(x_batch)):
             sent= x_batch[index_b]
             sent = sent[len('startseq '):-len(' endseq')]
-            sentences = sent.strip().split('.')
+            sentences = sent.strip().split('periodseq')
             
             sentences_cleaned = []
 
@@ -110,7 +110,8 @@ class det_gen(tensorflow.keras.utils.Sequence):
                     sentences_cleaned.append(sentences[index])
                     
             shuffle(sentences_cleaned)
-            sentences_cleaned = ".".join(sentences_cleaned)
+            sentences_cleaned = " periodseq ".join(sentences_cleaned)
+            sentences_cleaned = sentences_cleaned.strip()
             
             sentences_cleaned = 'startseq '+ sentences_cleaned +' endseq'
             x_batch_shuffled.append(sentences_cleaned)
