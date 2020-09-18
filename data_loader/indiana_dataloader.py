@@ -92,10 +92,13 @@ class det_gen(tensorflow.keras.utils.Sequence):
             images.append(img)
             
             
-        
-        
         x_batch = self.df['findings_cleaned'].iloc[indicies].tolist()
+        
         # shuffle GT senetces 
+        print("X_batch")
+        print(x_batch)
+        print("=====================================================================")
+        
         x_batch_shuffled = []
         for index_b in range(len(x_batch)):
             sentences = x_batch[index_b].strip().split('.')
