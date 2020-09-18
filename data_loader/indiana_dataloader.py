@@ -97,7 +97,6 @@ class det_gen(tensorflow.keras.utils.Sequence):
         
         # shuffle GT senetces 
         
-        print(x_batch)
         x_batch_shuffled = []
         for index_b in range(len(x_batch)):
             sent= x_batch[index_b]
@@ -120,7 +119,6 @@ class det_gen(tensorflow.keras.utils.Sequence):
         
         x_batch = x_batch_shuffled
         
-        print(x_batch)
         
         x_batch_input = [sample[:-len(" endseq")] for sample in x_batch]
         
