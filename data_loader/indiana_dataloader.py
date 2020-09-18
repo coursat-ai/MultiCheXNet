@@ -105,6 +105,7 @@ class det_gen(tensorflow.keras.utils.Sequence):
             if len(sentences[index])>2:
                 sentences_cleaned.append(sentences[index])
             shuffle(sentences_cleaned)
+            print(sentences_cleaned)
             x_batch_shuffled.append(".".join(sentences_cleaned))
         
         x_batch = x_batch_shuffled
