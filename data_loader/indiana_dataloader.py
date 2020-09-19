@@ -37,7 +37,7 @@ AUGMENTATIONS_TRAIN = Compose([
 
 class det_gen(tensorflow.keras.utils.Sequence):
     'Generates data from a Dataframe'
-    def __init__(self,df, tok, max_len,images_path, dim=(256,256), batch_size=8,preprocess_func=None,hist_eq=False,normalize=False,augmentation=False):
+    def __init__(self,df, tok, max_len,images_path, dim=(256,256), batch_size=8,preprocess_func=None,hist_eq=False,normalize=False,augmentation=False,shuffle_GT_sentences=True):
         self.df=df
         self.dim = dim
         self.images_path = images_path
@@ -47,6 +47,7 @@ class det_gen(tensorflow.keras.utils.Sequence):
         self.hist_eq = hist_eq
         self.normalize=normalize
         self.augmentation = augmentation
+        self.shuffle_GT_sentences=shuffle_GT_sentences
         
         self.nb_iteration = math.ceil((self.df.shape[0])/self.batch_size)
         self.preprocess_func = preprocess_func
@@ -96,28 +97,28 @@ class det_gen(tensorflow.keras.utils.Sequence):
         x_batch = self.df['findings_cleaned'].iloc[indicies].tolist()
         
         # shuffle GT senetces 
-        
-        x_batch_shuffled = []
-        for index_b in range(len(x_batch)):
-            sent= x_batch[index_b]
-            sent = sent[len('startseq '):-len(' endseq')]
-            sentences = sent.strip().split('periodseq')
-            
-            sentences_cleaned = []
+        if self.shuffle_GT_sentences:
+            x_batch_shuffled = []
+            for index_b in range(len(x_batch)):
+                sent= x_batch[index_b]
+                sent = sent[len('startseq '):-len(' endseq')]
+                sentences = sent.strip().split('periodseq')
 
-            for index in range(len(sentences)):
-                sentences[index] = sentences[index].strip()
-                if len(sentences[index])>2:
-                    sentences_cleaned.append(sentences[index])
-                    
-            shuffle(sentences_cleaned)
-            sentences_cleaned = " periodseq ".join(sentences_cleaned)
-            sentences_cleaned = sentences_cleaned.strip()
-            
-            sentences_cleaned = 'startseq '+ sentences_cleaned +' endseq'
-            x_batch_shuffled.append(sentences_cleaned)
-        
-        x_batch = x_batch_shuffled
+                sentences_cleaned = []
+                
+                for index in range(len(sentences)):
+                    sentences[index] = sentences[index].strip()
+                    if len(sentences[index])>2:
+                        sentences_cleaned.append(sentences[index])
+
+                shuffle(sentences_cleaned)
+                sentences_cleaned = " periodseq ".join(sentences_cleaned)
+                sentences_cleaned = sentences_cleaned.strip()
+
+                sentences_cleaned = 'startseq '+ sentences_cleaned +' endseq'
+                x_batch_shuffled.append(sentences_cleaned)
+
+            x_batch = x_batch_shuffled
         
         
         x_batch_input = [sample[:-len(" endseq")] for sample in x_batch]
@@ -143,7 +144,7 @@ class det_gen(tensorflow.keras.utils.Sequence):
         return [np.array(images), np.array(x_batch_input)] , np.array(x_batch_gt)   
 
 
-def get_train_validation_generator(csv_path1,csv_path2,img_path, vocab_size,max_len,batch_size=8, dim=(256,256),shuffle=True ,preprocess = None , validation_split=0.2,augmentation=False,normalize=False,hist_eq =False):
+def get_train_validation_generator(csv_path1,csv_path2,img_path, vocab_size,max_len,batch_size=8, dim=(256,256),shuffle=True , preprocess = None , validation_split=0.2,augmentation=False,normalize=False,hist_eq =False,shuffle_GT_sentences=True):
     
     df1= pd.read_csv(csv_path1)
     df2= pd.read_csv(csv_path2)
@@ -178,12 +179,12 @@ def get_train_validation_generator(csv_path1,csv_path2,img_path, vocab_size,max_
     if augmentation == True:
         augmentation='train'
         
-    train_dataloader =  det_gen(df_train, tok, max_len,img_path,dim=dim,batch_size=batch_size,preprocess_func=preprocess,normalize=normalize,hist_eq=hist_eq,augmentation=augmentation  )
+    train_dataloader =  det_gen(df_train, tok, max_len,img_path,dim=dim,batch_size=batch_size,preprocess_func=preprocess, normalize=normalize,hist_eq=hist_eq,augmentation=augmentation,shuffle_GT_sentences=shuffle_GT_sentences  )
     
     if augmentation == 'train':
         augmentation='validation'
     
-    val_dataloader =  det_gen(df_val, tok, max_len,img_path,dim=dim,batch_size=batch_size,preprocess_func=preprocess,normalize=normalize,hist_eq=hist_eq,augmentation=augmentation  )
+    val_dataloader =  det_gen(df_val, tok, max_len,img_path,dim=dim,batch_size=batch_size,preprocess_func=preprocess, normalize=normalize,hist_eq=hist_eq,augmentation=augmentation,shuffle_GT_sentences=False  )
     
 
     return train_dataloader, val_dataloader, vocab_size, tok
