@@ -96,7 +96,7 @@ class det_gen(tensorflow.keras.utils.Sequence):
             images.append(img)
             
         if self.feat_model != None:
-            images = self.feat_model.predict(images)
+            images = self.feat_model.predict(np.array(images))
         
         x_batch = self.df['findings_cleaned'].iloc[indicies].tolist()
         
