@@ -148,7 +148,7 @@ class det_gen(tensorflow.keras.utils.Sequence):
         return [np.array(images), np.array(x_batch_input)] , np.array(x_batch_gt)   
 
 
-def get_train_validation_generator(csv_path1,csv_path2,img_path, vocab_size,max_len,batch_size=8, dim=(256,256),shuffle=True , preprocess = None , validation_split=0.2,augmentation=False,normalize=False,hist_eq =False,shuffle_GT_sentences=Truem,feat_model=None):
+def get_train_validation_generator(csv_path1,csv_path2,img_path, vocab_size,max_len,batch_size=8, dim=(256,256),shuffle=True , preprocess = None , validation_split=0.2,augmentation=False,normalize=False,hist_eq =False,shuffle_GT_sentences=True ,feat_model=None):
     
     df1= pd.read_csv(csv_path1)
     df2= pd.read_csv(csv_path2)
