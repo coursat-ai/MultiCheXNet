@@ -158,7 +158,7 @@ def get_train_validation_generator(csv_path1,csv_path2,img_path, vocab_size,max_
     df  =pd.merge(df1,df2,  on=['uid'])
     
     
-    df= df.dropna(subset=['findings'])
+    df= df.dropna(subset=['impression'])
     df['findings_cleaned'] = df['impression'].apply(normalize_text)
     df['findings_cleaned']=df['findings_cleaned'].str.replace('.',' periodseq ')
     df['findings_cleaned'] = 'startseq '+df['findings_cleaned']+' endseq'
