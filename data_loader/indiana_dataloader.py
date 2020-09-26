@@ -93,7 +93,7 @@ class det_gen(tensorflow.keras.utils.Sequence):
         else:
             negative_indicies = list(self.df[self.df['Problems']=='normal'].index)
             positive_indicies = list(self.df[self.df['Problems']!='normal'].index)
-            number_of_negative = int(self.batch_size*self.over_sampling)
+            number_of_negative = int(self.batch_size*self.over_sample)
             number_of_postive = self.batch_size-number_of_negative
 
             negative_indicies = np.random.randint(0,len(negative_indicies),number_of_negative)
