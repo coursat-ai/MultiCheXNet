@@ -37,7 +37,7 @@ AUGMENTATIONS_TRAIN = Compose([
 
 class det_gen(tensorflow.keras.utils.Sequence):
     'Generates data from a Dataframe'
-    def __init__(self,df, tok, max_len,images_path, dim=(256,256), batch_size=8,preprocess_func=None,hist_eq=False,normalize=False,augmentation=False,shuffle_GT_sentences=True,feat_model=None):
+    def __init__(self,df, tok, max_len,images_path, dim=(256,256), batch_size=8,preprocess_func=None,hist_eq=False,normalize=False,augmentation=False,shuffle_GT_sentences=True,feat_model=None,over_sample=False):
         self.df=df
         self.dim = dim
         self.images_path = images_path
@@ -48,6 +48,7 @@ class det_gen(tensorflow.keras.utils.Sequence):
         self.normalize=normalize
         self.augmentation = augmentation
         self.shuffle_GT_sentences=shuffle_GT_sentences
+        self.over_sample=over_sample
         
         self.feat_model=feat_model
         
@@ -87,8 +88,19 @@ class det_gen(tensorflow.keras.utils.Sequence):
     
     def __getitem__(self, index):
         'Generate one batch of data'
+        if self.over_sample==False:
+            indicies = list(range(index*self.batch_size, min((index*self.batch_size)+self.batch_size ,(self.df.shape[0]))))
+        else:
+            negative_indicies = list(self.df[self.df['Problems']=='normal'].index)
+            positive_indicies = list(self.df[self.df['Problems']!='normal'].index)
+            number_of_negative = int(self.batch_size*self.over_sampling)
+            number_of_postive = self.batch_size-number_of_negative
+
+            negative_indicies = np.random.randint(0,len(negative_indicies),number_of_negative)
+            positive_indicies = np.random.randint(0,len(positive_indicies),number_of_postive)
+            indicies = negative_indicies.tolist()+positive_indicies.tolist()
+            
         
-        indicies = list(range(index*self.batch_size, min((index*self.batch_size)+self.batch_size ,(self.df.shape[0]))))
         
         images = []
         for img_path in self.df['filename'].iloc[indicies].tolist():
@@ -148,7 +160,7 @@ class det_gen(tensorflow.keras.utils.Sequence):
         return [np.array(images), np.array(x_batch_input)] , np.array(x_batch_gt)   
 
 
-def get_train_validation_generator(csv_path1,csv_path2,img_path, vocab_size,max_len,batch_size=8, dim=(256,256),shuffle=True , preprocess = None , validation_split=0.2,augmentation=False,normalize=False,hist_eq =False,shuffle_GT_sentences=True ,feat_model=None):
+def get_train_validation_generator(csv_path1,csv_path2,img_path, vocab_size,max_len,batch_size=8, dim=(256,256),shuffle=True , preprocess = None , validation_split=0.2,augmentation=False,normalize=False,hist_eq =False,shuffle_GT_sentences=True ,feat_model=None,over_sample=False):
     
     df1= pd.read_csv(csv_path1)
     df2= pd.read_csv(csv_path2)
@@ -183,12 +195,12 @@ def get_train_validation_generator(csv_path1,csv_path2,img_path, vocab_size,max_
     if augmentation == True:
         augmentation='train'
         
-    train_dataloader =  det_gen(df_train, tok, max_len,img_path,dim=dim,batch_size=batch_size,preprocess_func=preprocess, normalize=normalize,hist_eq=hist_eq,augmentation=augmentation,shuffle_GT_sentences=shuffle_GT_sentences,feat_model=feat_model  )
+    train_dataloader =  det_gen(df_train, tok, max_len,img_path,dim=dim,batch_size=batch_size,preprocess_func=preprocess, normalize=normalize,hist_eq=hist_eq,augmentation=augmentation,shuffle_GT_sentences=shuffle_GT_sentences,feat_model=feat_model,over_sample=over_sample )
     
     if augmentation == 'train':
         augmentation='validation'
     
-    val_dataloader =  det_gen(df_val, tok, max_len,img_path,dim=dim,batch_size=batch_size,preprocess_func=preprocess, normalize=normalize,hist_eq=hist_eq,augmentation=augmentation,shuffle_GT_sentences=False,feat_model=feat_model  )
+    val_dataloader =  det_gen(df_val, tok, max_len,img_path,dim=dim,batch_size=batch_size,preprocess_func=preprocess, normalize=normalize,hist_eq=hist_eq,augmentation=augmentation,shuffle_GT_sentences=False,feat_model=feat_model,over_sample=over_sample  )
     
 
     return train_dataloader, val_dataloader, vocab_size, tok
