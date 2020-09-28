@@ -203,4 +203,4 @@ def get_train_validation_generator(csv_path1,csv_path2,img_path, vocab_size,max_
     val_dataloader =  det_gen(df_val, tok, max_len,img_path,dim=dim,batch_size=batch_size,preprocess_func=preprocess, normalize=normalize,hist_eq=hist_eq,augmentation=augmentation,shuffle_GT_sentences=False,feat_model=feat_model,over_sample=over_sample  )
     
 
-    return train_dataloader, val_dataloader, vocab_size, tok
+    return train_dataloader, val_dataloader, vocab_size, tok,df
