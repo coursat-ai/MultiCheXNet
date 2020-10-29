@@ -93,6 +93,7 @@ class Segmenter(ModelBlock):
         
 #refrence: https://gist.github.com/wassname/7793e2058c5c9dacb5212c0ac0b18a8a
 def dice_coeff(y_true, y_pred, smooth=1):
+    y_true= tf.convert_to_tensor(y_true, dtype=tf.float32)
     intersection = K.sum(K.abs(y_true * y_pred), axis=-1)
     return (2. * intersection + smooth) / (K.sum(K.square(y_true),-1) + K.sum(K.square(y_pred),-1) + smooth)
 
