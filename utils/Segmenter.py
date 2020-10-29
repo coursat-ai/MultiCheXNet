@@ -85,9 +85,7 @@ class Segmenter(ModelBlock):
     
     @tf.function
     def loss(self,y_true,y_pred):
-        if tf.math.reduce_all(tf.math.equal(y_true,-1)):
-            return  tf.convert_to_tensor(0, dtype=tf.float32)
-        return dice_loss(y_true, y_pred)
+        return seg_loss(y_true,y_pred)
 
 
         
@@ -101,6 +99,12 @@ def dice_coeff(y_true, y_pred, smooth=1):
 def dice_loss(y_true, y_pred):
     loss= 1-dice_coeff(y_true, y_pred)
     return loss 
+
+@tf.function
+def seg_loss(y_true,y_pred):
+    if tf.math.reduce_all(tf.math.equal(y_true,-1)):
+        return  tf.convert_to_tensor(0, dtype=tf.float32)
+    return dice_loss(y_true, y_pred)
 
 def bce_dice_loss(y_true, y_pred):
     return BinaryCrossentropy(y_true, y_pred) + dice_loss(y_true, y_pred)
