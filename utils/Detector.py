@@ -122,6 +122,9 @@ class Detector(ModelBlock):
     def yolo_loss(self, y_true, y_pred):
         n_cells = y_pred.get_shape().as_list()[1]
         y_true = tf.reshape(y_true, tf.shape(y_pred), name='y_true')
+        # line added to solve error
+        y_true = tf.cast(y_true,dtype=tf.float32)
+        
         y_pred = tf.identity(y_pred, name='y_pred')
         
         TINY_YOLOV2_ANCHOR_PRIORS = tf.convert_to_tensor(self.anchors, dtype= tf.float32)
@@ -140,10 +143,6 @@ class Detector(ModelBlock):
         # compute bb width and height
         predicted_wh = TINY_YOLOV2_ANCHOR_PRIORS * tf.exp(y_pred[..., 2:4])
         
-        predicted_wh = tf.cast(predicted_wh, tf.float64)
-        predicted_xy = tf.cast(predicted_xy, tf.float64)
-        
-        
         # compute predicted bb center and width
         predicted_min = predicted_xy - predicted_wh / 2
         predicted_max = predicted_xy + predicted_wh / 2
@@ -151,9 +150,6 @@ class Detector(ModelBlock):
         predicted_objectedness = tf.nn.sigmoid(y_pred[..., 4])
         predicted_logits = tf.nn.softmax(y_pred[..., 5:])
 
-        predicted_objectedness = tf.cast(predicted_objectedness, tf.float64)
-        predicted_logits = tf.cast(predicted_logits, tf.float64)
-        
         #### PROCESS TRUE ####
         true_xy = y_true[..., :2]
         true_wh = y_true[..., 2:4]
