@@ -8,7 +8,6 @@ class Segmenter(ModelBlock):
     def __init__(self, encoder):
         self.encoder = encoder.model
         self.model = self.make_model()
-        self.focal_loss= binary_focal_loss()
         #self.num_layers = ModelBlock.get_head_num_layers(encoder, self.model)
 
     def dense_block(self, x, blocks, name):
