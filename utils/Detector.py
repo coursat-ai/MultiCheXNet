@@ -151,6 +151,9 @@ class Detector(ModelBlock):
         predicted_objectedness = tf.nn.sigmoid(y_pred[..., 4])
         predicted_logits = tf.nn.softmax(y_pred[..., 5:])
 
+        predicted_objectedness = tf.cast(predicted_objectedness, tf.float64)
+        predicted_logits = tf.cast(predicted_logits, tf.float64)
+        
         #### PROCESS TRUE ####
         true_xy = y_true[..., :2]
         true_wh = y_true[..., 2:4]
