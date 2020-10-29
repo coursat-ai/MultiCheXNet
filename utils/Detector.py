@@ -167,6 +167,7 @@ class Detector(ModelBlock):
         true_areas = true_wh[..., 0] * true_wh[..., 1]
         pred_areas = predicted_wh[..., 0] * predicted_wh[..., 1]
         pred_areas = tf.cast(pred_areas, tf.float64)
+        intersect_areas = tf.cast(intersect_areas, tf.float64)
         
         union_areas = pred_areas + true_areas - intersect_areas
         iou_scores = intersect_areas / union_areas
