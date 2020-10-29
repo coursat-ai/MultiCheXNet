@@ -139,7 +139,11 @@ class Detector(ModelBlock):
 
         # compute bb width and height
         predicted_wh = TINY_YOLOV2_ANCHOR_PRIORS * tf.exp(y_pred[..., 2:4])
-
+        
+        predicted_wh = tf.cast(predicted_wh, tf.float64)
+        predicted_xy = tf.cast(predicted_xy, tf.float64)
+        
+        
         # compute predicted bb center and width
         predicted_min = predicted_xy - predicted_wh / 2
         predicted_max = predicted_xy + predicted_wh / 2
@@ -156,8 +160,6 @@ class Detector(ModelBlock):
         true_max = true_xy + true_wh / 2
 
         #### compute iou between ground truth and predicted (used for objectedness) ####
-        predicted_min = tf.cast(predicted_min, tf.float64)
-        predicted_max = tf.cast(predicted_max, tf.float64)
         
         intersect_mins = tf.maximum(predicted_min, true_min)
         intersect_maxes = tf.minimum(predicted_max, true_max)
@@ -166,8 +168,6 @@ class Detector(ModelBlock):
 
         true_areas = true_wh[..., 0] * true_wh[..., 1]
         pred_areas = predicted_wh[..., 0] * predicted_wh[..., 1]
-        pred_areas = tf.cast(pred_areas, tf.float64)
-        intersect_areas = tf.cast(intersect_areas, tf.float64)
         
         union_areas = pred_areas + true_areas - intersect_areas
         iou_scores = intersect_areas / union_areas
