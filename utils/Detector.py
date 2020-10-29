@@ -156,6 +156,7 @@ class Detector(ModelBlock):
         true_max = true_xy + true_wh / 2
 
         #### compute iou between ground truth and predicted (used for objectedness) ####
+        predicted_min = tf.cast(predicted_min, tf.float64)
         intersect_mins = tf.maximum(predicted_min, true_min)
         intersect_maxes = tf.minimum(predicted_max, true_max)
         intersect_wh = tf.maximum(intersect_maxes - intersect_mins, 0.)
