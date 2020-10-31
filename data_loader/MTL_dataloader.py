@@ -61,8 +61,9 @@ class MTL_generatot(tensorflow.keras.utils.Sequence):
                 Y_seg= np.array(Y_seg)
                 Y_det = np.ones([self.batch_size,8,8,5,6])*-1
                 
-                X_report = np.ones([self.batch_size , self.report_gen.max_len])*-1
-                Y_report = np.ones([self.batch_size , self.report_gen.max_len ,self.report_gen.vocab_size ])*-1
+                if self.report_gen is not None:
+                    X_report = np.ones([self.batch_size , self.report_gen.max_len])*-1
+                    Y_report = np.ones([self.batch_size , self.report_gen.max_len ,self.report_gen.vocab_size ])*-1
 
             if self.batch_number == 2:
                 try:
@@ -80,8 +81,10 @@ class MTL_generatot(tensorflow.keras.utils.Sequence):
                 Y_class = np.array(Y_class)
                 Y_det= np.array(Y_det)
                 Y_seg = np.ones([self.batch_size,256,256,1])*-1
-                X_report = np.ones([self.batch_size , self.report_gen.max_len])*-1
-                Y_report = np.ones([self.batch_size , self.report_gen.max_len ,self.report_gen.vocab_size ])*-1
+                
+                if self.report_gen is not None:
+                    X_report = np.ones([self.batch_size , self.report_gen.max_len])*-1
+                    Y_report = np.ones([self.batch_size , self.report_gen.max_len ,self.report_gen.vocab_size ])*-1
             
                 if self.report_gen is None:
                     self.batch_number =0 
