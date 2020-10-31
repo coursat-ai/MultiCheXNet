@@ -24,4 +24,6 @@ class Classifier(ModelBlock):
 
         return X
     def loss(self,y_true,y_pred):
+        if tf.math.reduce_all(tf.math.equal(y_true,-1)):
+            return  tf.convert_to_tensor(0, dtype=tf.float32)
         return categorical_crossentropy(y_true,y_pred)
