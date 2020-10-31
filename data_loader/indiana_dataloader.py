@@ -37,12 +37,13 @@ AUGMENTATIONS_TRAIN = Compose([
 
 class det_gen(tensorflow.keras.utils.Sequence):
     'Generates data from a Dataframe'
-    def __init__(self,df, tok, max_len,images_path, dim=(256,256), batch_size=8,preprocess_func=None,hist_eq=False,normalize=False,augmentation=False,shuffle_GT_sentences=True,feat_model=None,over_sample=False):
+    def __init__(self,df, tok, max_len,vocab_size , images_path, dim=(256,256), batch_size=8,preprocess_func=None,hist_eq=False,normalize=False,augmentation=False,shuffle_GT_sentences=True,feat_model=None,over_sample=False):
         self.df=df
         self.dim = dim
         self.images_path = images_path
         self.tok= tok
         self.max_len = max_len
+        self.vocab_size = vocab_size
         self.batch_size = batch_size
         self.hist_eq = hist_eq
         self.normalize=normalize
@@ -195,12 +196,12 @@ def get_train_validation_generator(csv_path1,csv_path2,img_path, vocab_size,max_
     if augmentation == True:
         augmentation='train'
         
-    train_dataloader =  det_gen(df_train, tok, max_len,img_path,dim=dim,batch_size=batch_size,preprocess_func=preprocess, normalize=normalize,hist_eq=hist_eq,augmentation=augmentation,shuffle_GT_sentences=shuffle_GT_sentences,feat_model=feat_model,over_sample=over_sample )
+    train_dataloader =  det_gen(df_train, tok, max_len,vocab_size, img_path,dim=dim,batch_size=batch_size,preprocess_func=preprocess, normalize=normalize,hist_eq=hist_eq,augmentation=augmentation,shuffle_GT_sentences=shuffle_GT_sentences,feat_model=feat_model,over_sample=over_sample )
     
     if augmentation == 'train':
         augmentation='validation'
     
-    val_dataloader =  det_gen(df_val, tok, max_len,img_path,dim=dim,batch_size=batch_size,preprocess_func=preprocess, normalize=normalize,hist_eq=hist_eq,augmentation=augmentation,shuffle_GT_sentences=False,feat_model=feat_model,over_sample=over_sample  )
+    val_dataloader =  det_gen(df_val, tok, max_len,vocab_size, img_path,dim=dim,batch_size=batch_size,preprocess_func=preprocess, normalize=normalize,hist_eq=hist_eq,augmentation=augmentation,shuffle_GT_sentences=False,feat_model=feat_model,over_sample=over_sample  )
     
 
-    return train_dataloader, val_dataloader, vocab_size, tok,df
+    return train_dataloader, val_dataloader
