@@ -173,7 +173,7 @@ def get_train_validation_generator(det_csv_path,seg_csv_path , det_img_path, seg
         max_len=100
         shuffle_GT_sentences=True
         feat_model=None
-        report_train_gen, report_valid_gen =  get_train_validation_generator(report_csv_path1,report_csv_path2,
+        report_train_gen, report_valid_gen =  report_gen_get_train_validation_generator(report_csv_path1,report_csv_path2,
                                        report_img_path, vocab_size,max_len,
                                        batch_size=batch_size, dim=dim,
                                        shuffle=shuffle , preprocess = preprocess ,
