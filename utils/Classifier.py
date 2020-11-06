@@ -2,6 +2,7 @@ from .ModelBlock import ModelBlock
 from tensorflow.keras.layers import Flatten,Input,Dense, GlobalAveragePooling2D , Dropout
 from tensorflow.keras.regularizers import l2
 from tensorflow.keras.losses import categorical_crossentropy
+import tensorflow as tf
 
 class Classifier(ModelBlock):
     def __init__(self, encoder):
