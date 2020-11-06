@@ -96,7 +96,7 @@ class MTL_generatot(tensorflow.keras.utils.Sequence):
                     self.report_itterator = self.report_gen.__iter__()
                     (X,X_report), Y_report = next(self.report_itterator) 
                 
-                Y_class = np.ones(self.batch_size)*-1 
+                Y_class = np.ones([self.batch_size,3])*-1 
                 Y_det = np.ones([self.batch_size,8,8,5,6])*-1
                 Y_seg = np.ones([self.batch_size,256,256,1])*-1
                 
