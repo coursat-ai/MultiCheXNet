@@ -63,7 +63,7 @@ class MTL_generatot(tensorflow.keras.utils.Sequence):
                 
                 if self.report_gen is not None:
                     X_report = np.ones([self.batch_size , self.report_gen.max_len])*-1
-                    Y_report = np.ones([self.batch_size , self.report_gen.max_len ,self.report_gen.vocab_size ])*-1
+                    Y_report = np.ones([self.batch_size , self.report_gen.max_len-1])*-1
 
             if self.batch_number == 2:
                 try:
@@ -84,7 +84,7 @@ class MTL_generatot(tensorflow.keras.utils.Sequence):
                 
                 if self.report_gen is not None:
                     X_report = np.ones([self.batch_size , self.report_gen.max_len])*-1
-                    Y_report = np.ones([self.batch_size , self.report_gen.max_len ,self.report_gen.vocab_size ])*-1
+                    Y_report = np.ones([self.batch_size , self.report_gen.max_len-1 ])*-1
             
                 if self.report_gen is None:
                     self.batch_number =0 
@@ -141,7 +141,7 @@ class MTL_generatot(tensorflow.keras.utils.Sequence):
         if self.report_gen is None:
             return X, [Y_class, Y_det, Y_seg]
         else:
-            return X, [Y_class, Y_det, Y_seg , X_report , Y_report]
+            return [X,X_report], [Y_class, Y_det, Y_seg , Y_report]
 
 def get_train_validation_generator(det_csv_path,seg_csv_path , det_img_path, seg_img_path, report_csv_path1=None,report_csv_path2=None,report_img_path=None, batch_size=8, dim=(256,256), n_channels=3,
                   shuffle=True ,preprocess = None , only_positive=True, validation_split=0.2,augmentation=False,normalize=False,hist_eq=False,batch_positive_portion=None ):
