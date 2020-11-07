@@ -85,10 +85,11 @@ class Segmenter(ModelBlock):
     
     @tf.function
     def loss(self,y_true,y_pred):
-        return seg_loss(y_true,y_pred)
-
-
-        
+        return tf.cond(
+                    tf.math.reduce_all(tf.math.equal(y_true,-1))
+                    ,true_fn=  lambda: tf.convert_to_tensor(0, dtype=tf.float32)
+                    ,false_fn= lambda: seg_loss(y_true,y_pred)
+                    )     
 #refrence: https://gist.github.com/wassname/7793e2058c5c9dacb5212c0ac0b18a8a
 def dice_coeff(y_true, y_pred, smooth=1):
     y_true= tf.cast(y_true, tf.float32)
