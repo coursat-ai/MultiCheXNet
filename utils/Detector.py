@@ -114,10 +114,12 @@ class Detector(ModelBlock):
         return model_out
     
     @tf.function
-    def loss(self, y_true, y_pred):
-        if tf.math.reduce_all(tf.math.equal(y_true,-1)):
-            return  tf.convert_to_tensor(0, dtype=tf.float32)
-        return self.yolo_loss( y_true, y_pred)
+    def loss(self, y_true, y_pred):    
+        return tf.cond(
+                    tf.math.reduce_all(tf.math.equal(y_true,-1))
+                    ,true_fn=  lambda: tf.convert_to_tensor(0, dtype=tf.float32)
+                    ,false_fn= lambda: self.yolo_loss( y_true, y_pred)
+                    )
     
     def yolo_loss(self, y_true, y_pred):
         n_cells = y_pred.get_shape().as_list()[1]
